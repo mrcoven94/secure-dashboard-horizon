@@ -121,7 +121,7 @@ export default function Groups() {
         group_id: member.group_id,
         user_id: member.user_id,
         role: member.role,
-        email: member.profiles?.email
+        email: member.profiles ? member.profiles.email : 'Unknown Email'
       }));
 
       setGroupMembers(formattedData);
