@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Group, GroupMember, ExistingUser } from '@/types/group';
 
@@ -35,9 +34,9 @@ export async function fetchGroupMembers(groupId: string) {
         email = member.profiles.length > 0 && member.profiles[0]?.email 
           ? member.profiles[0].email 
           : 'Unknown Email';
-      } else if (typeof member.profiles === 'object') {
-        // If it's an object, take its email property
-        email = typeof member.profiles.email === 'string' 
+      } else if (typeof member.profiles === 'object' && member.profiles !== null) {
+        // If it's an object, safely access its email property
+        email = member.profiles.hasOwnProperty('email') && typeof member.profiles.email === 'string'
           ? member.profiles.email 
           : 'Unknown Email';
       }
@@ -209,4 +208,19 @@ export async function removeMemberFromGroup(memberId: string) {
     .eq('id', memberId);
 
   if (error) throw error;
+}
+
+export async function updateUserAdminStatus(userId: string, isAdmin: boolean) {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_admin: isAdmin })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error updating user admin status:', error);
+    throw error;
+  }
 }
