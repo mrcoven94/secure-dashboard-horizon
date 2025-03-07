@@ -1,29 +1,20 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { Group, GroupMember, ExistingUser } from '@/types/group';
+import {
+  fetchGroups as apiGetGroups,
+  fetchGroupMembers as apiGetGroupMembers,
+  fetchExistingUsers as apiGetExistingUsers,
+  createGroup as apiCreateGroup,
+  updateGroup as apiUpdateGroup,
+  deleteGroup as apiDeleteGroup,
+  addMemberToGroup as apiAddMember,
+  removeMemberFromGroup as apiRemoveMember
+} from '@/services/groupService';
 
-export type Group = {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-  created_by: string;
-};
-
-export type GroupMember = {
-  id: string;
-  group_id: string;
-  user_id: string;
-  role: string;
-  email?: string;
-};
-
-export type ExistingUser = {
-  id: string;
-  email: string;
-};
+export { type Group, type GroupMember, type ExistingUser } from '@/types/group';
 
 export function useGroups() {
   const { user } = useAuth();
@@ -52,27 +43,23 @@ export function useGroups() {
 
   // Fetch groups
   useEffect(() => {
-    fetchGroups();
+    if (user) {
+      fetchGroupsData();
+    }
   }, [user]);
 
   // Fetch existing users when create group dialog is opened
   useEffect(() => {
     if (createDialogOpen) {
-      fetchExistingUsers();
+      fetchExistingUsersData();
     }
   }, [createDialogOpen]);
 
-  const fetchGroups = async () => {
+  const fetchGroupsData = async () => {
     try {
-      if (!user) return;
-
       setLoading(true);
-      const { data, error } = await supabase
-        .from('groups')
-        .select('*');
-
-      if (error) throw error;
-      setGroups(data || []);
+      const data = await apiGetGroups();
+      setGroups(data);
     } catch (error) {
       console.error('Error fetching groups:', error);
       toast.error('Failed to load groups');
@@ -81,24 +68,29 @@ export function useGroups() {
     }
   };
 
-  // Fetch existing users from the profiles table
-  const fetchExistingUsers = async () => {
+  const fetchExistingUsersData = async () => {
     try {
-      if (!user) return;
-
       setLoadingUsers(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .order('email');
-
-      if (error) throw error;
-      setExistingUsers(data || []);
+      const data = await apiGetExistingUsers();
+      setExistingUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const fetchGroupMembersData = async (groupId: string) => {
+    try {
+      setLoadingMembers(true);
+      const data = await apiGetGroupMembers(groupId);
+      setGroupMembers(data);
+    } catch (error) {
+      console.error('Error fetching group members:', error);
+      toast.error('Failed to load group members');
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -112,91 +104,17 @@ export function useGroups() {
     try {
       if (!user) return;
 
-      // Create the group
-      const { data, error } = await supabase
-        .from('groups')
-        .insert({
-          name: newGroupName.trim(),
-          description: newGroupDesc.trim() || null,
-          created_by: user.id,
-        })
-        .select();
+      const newGroup = await apiCreateGroup(
+        newGroupName,
+        newGroupDesc,
+        user.id,
+        selectedUsers,
+        initialMembers
+      );
 
-      if (error) throw error;
-
-      const newGroup = data?.[0];
-      if (!newGroup) throw new Error('Failed to create group');
-
-      // Add selected existing users
-      if (selectedUsers.length > 0) {
-        const membersToAdd = selectedUsers.map(selectedUser => ({
-          group_id: newGroup.id,
-          user_id: selectedUser.id,
-          role: 'member',
-        }));
-
-        const { error: memberError } = await supabase
-          .from('group_members')
-          .insert(membersToAdd);
-
-        if (memberError) {
-          console.error('Failed to add existing users to group', memberError);
-          toast.error('Failed to add some members to the group');
-        }
-      }
-
-      // Add initial members (email invites) if provided
+      // Display appropriate toast notifications for invited members
       if (initialMembers.length > 0) {
-        const addMembersPromises = initialMembers.map(async (email) => {
-          // Check if user already exists in the system
-          const { data: profiles, error: profileError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email.trim());
-
-          if (profileError) {
-            console.error(`Error checking if user exists: ${email}`, profileError);
-            return { email, success: false };
-          }
-
-          // If user exists, add them directly
-          if (profiles && profiles.length > 0) {
-            const { error: memberError } = await supabase
-              .from('group_members')
-              .insert({
-                group_id: newGroup.id,
-                user_id: profiles[0].id,
-                role: 'member',
-              });
-
-            if (memberError) {
-              console.error(`Failed to add ${email} to group`, memberError);
-              return { email, success: false };
-            }
-            return { email, success: true };
-          }
-
-          // For non-existing users, create an invite record
-          // In a real app, you would implement a proper invitation system
-          // For this demo, we'll just store the invited email in a toast notification
-          toast.info(`Invitation would be sent to ${email}`);
-          
-          // TODO: Implement proper invitation system 
-          // For now, we'll just count it as a successful operation
-          return { email, success: true };
-        });
-
-        const results = await Promise.all(addMembersPromises);
-        const successful = results.filter(r => r.success).length;
-        const failed = results.filter(r => !r.success).length;
-
-        if (successful > 0 && failed === 0) {
-          toast.success(`Added all ${successful} members to the group`);
-        } else if (successful > 0 && failed > 0) {
-          toast.info(`Added ${successful} members, but ${failed} failed. Check logs for details.`);
-        } else if (failed > 0) {
-          toast.error(`Failed to add ${failed} members. Check logs for details.`);
-        }
+        toast.info(`Invitation would be sent to ${initialMembers.length} email(s)`);
       }
 
       setGroups([newGroup, ...groups]);
@@ -232,15 +150,7 @@ export function useGroups() {
     }
 
     try {
-      const { error } = await supabase
-        .from('groups')
-        .update({
-          name: editGroupName.trim(),
-          description: editGroupDesc.trim() || null,
-        })
-        .eq('id', groupToEdit.id);
-
-      if (error) throw error;
+      await apiUpdateGroup(groupToEdit.id, editGroupName, editGroupDesc);
 
       // Update the groups state with the edited group
       setGroups(groups.map(group => 
@@ -273,12 +183,7 @@ export function useGroups() {
     }
     
     try {
-      const { error } = await supabase
-        .from('groups')
-        .delete()
-        .eq('id', groupId);
-
-      if (error) throw error;
+      await apiDeleteGroup(groupId);
 
       setGroups(groups.filter(group => group.id !== groupId));
       if (selectedGroup?.id === groupId) {
@@ -291,48 +196,10 @@ export function useGroups() {
     }
   };
 
-  // Fetch group members
-  const fetchGroupMembers = async (groupId: string) => {
-    setLoadingMembers(true);
-    try {
-      const { data, error } = await supabase
-        .from('group_members')
-        .select(`
-          id,
-          group_id,
-          user_id,
-          role,
-          profiles(email)
-        `)
-        .eq('group_id', groupId);
-      
-      if (error) throw error;
-
-      // Format the data to get email from profiles
-      const formattedData = data.map(member => {
-        return {
-          id: member.id,
-          group_id: member.group_id,
-          user_id: member.user_id,
-          role: member.role,
-          // Correctly access the nested profile data
-          email: member.profiles ? member.profiles.email : 'Unknown Email'
-        };
-      });
-
-      setGroupMembers(formattedData);
-    } catch (error) {
-      console.error('Error fetching group members:', error);
-      toast.error('Failed to load group members');
-    } finally {
-      setLoadingMembers(false);
-    }
-  };
-
   // Open group details and fetch members
   const handleOpenGroup = (group: Group) => {
     setSelectedGroup(group);
-    fetchGroupMembers(group.id);
+    fetchGroupMembersData(group.id);
   };
 
   // Add member to group
@@ -343,44 +210,16 @@ export function useGroups() {
     }
 
     try {
-      // First, find if user exists by email
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', inviteEmail.trim())
-        .single();
-
-      if (profileError) {
-        toast.error('User not found with this email');
-        return;
-      }
-
-      // Add user to group
-      const { error } = await supabase
-        .from('group_members')
-        .insert({
-          group_id: selectedGroup.id,
-          user_id: profiles.id,
-          role: 'member',
-        });
-
-      if (error) {
-        if (error.code === '23505') {
-          toast.error('User is already a member of this group');
-        } else {
-          throw error;
-        }
-        return;
-      }
-
+      await apiAddMember(selectedGroup.id, inviteEmail);
+      
       // Refresh members list
-      await fetchGroupMembers(selectedGroup.id);
+      await fetchGroupMembersData(selectedGroup.id);
       setInviteEmail('');
       setInviteDialogOpen(false);
       toast.success('Member added to group successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding member:', error);
-      toast.error('Failed to add member to group');
+      toast.error(error.message || 'Failed to add member to group');
     }
   };
 
@@ -389,14 +228,9 @@ export function useGroups() {
     try {
       if (!selectedGroup) return;
 
-      const { error } = await supabase
-        .from('group_members')
-        .delete()
-        .eq('id', memberId);
+      await apiRemoveMember(memberId);
 
-      if (error) throw error;
-
-      // Refresh members list
+      // Update the members list in state
       setGroupMembers(groupMembers.filter(member => member.id !== memberId));
       toast.success('Member removed from group');
     } catch (error) {
