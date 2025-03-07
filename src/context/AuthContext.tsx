@@ -8,8 +8,10 @@ import {
 } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { Session, User } from '@supabase/supabase-js';
 
-type User = {
+type AppUser = {
   id: string;
   email: string;
   name: string;
@@ -18,7 +20,7 @@ type User = {
 };
 
 type AuthContextType = {
-  user: User | null;
+  user: AppUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -27,12 +29,12 @@ type AuthContextType = {
   checkAccess: (dashboardId: string) => boolean;
 };
 
-// Initial mock users for demo purposes
+// Initial test user data for fallback
 const DEMO_USERS = [
   {
     id: '1',
     email: 'admin@example.com',
-    password: 'password123', // In real app, this would be hashed
+    password: 'password123',
     name: 'Admin User',
     role: 'admin' as const,
     permissions: ['dashboard1', 'dashboard2', 'dashboard3']
@@ -50,24 +52,99 @@ const DEMO_USERS = [
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for saved auth on mount
+  // Initialize auth state from Supabase session
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('user');
-      }
-    }
-    setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      handleAuthChange(session);
+      setIsLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      handleAuthChange(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Handle auth state changes
+  const handleAuthChange = async (session: Session | null) => {
+    if (!session) {
+      setUser(null);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get user profile from profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        // If no profile exists, try to create one
+        if (error.code === 'PGRST116') {
+          await createUserProfile(session.user);
+        }
+      }
+
+      // Get user roles
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('roles(name)')
+        .eq('user_id', session.user.id);
+
+      // Get dashboards the user has access to
+      const { data: dashboardAccess } = await supabase
+        .from('dashboard_groups')
+        .select('dashboard_id')
+        .eq('group_id', session.user.id);
+
+      const permissions = dashboardAccess 
+        ? dashboardAccess.map(d => d.dashboard_id) 
+        : ['dashboard1']; // Default permission
+
+      // Create user object
+      const userObject: AppUser = {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: profile?.email.split('@')[0] || session.user.email?.split('@')[0] || 'User',
+        role: (profile?.is_admin || userRoles?.some(r => r.roles?.name === 'admin')) 
+          ? 'admin' 
+          : 'user',
+        permissions
+      };
+
+      setUser(userObject);
+    } catch (error) {
+      console.error('Error handling auth change:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Create a user profile if one doesn't exist
+  const createUserProfile = async (user: User) => {
+    try {
+      await supabase.from('profiles').insert({
+        id: user.id,
+        email: user.email,
+        is_admin: false
+      });
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+    }
+  };
 
   // Redirect authenticated users to dashboard if they access the login page
   useEffect(() => {
@@ -81,30 +158,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Check if user exists in our demo data
-      const foundUser = DEMO_USERS.find(
-        u => u.email === email && u.password === password
-      );
-      
-      if (!foundUser) {
-        throw new Error('Invalid credentials');
+      if (error) {
+        throw error;
       }
-      
-      // Remove password from user object
-      const { password: _, ...userWithoutPassword } = foundUser;
-      
-      // Save user to state and localStorage
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
       toast.success('Logged in successfully');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('Login failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      
+      // As a fallback for demo, check if user exists in demo data
+      if (process.env.NODE_ENV === 'development') {
+        const foundUser = DEMO_USERS.find(
+          u => u.email === email && u.password === password
+        );
+        
+        if (foundUser) {
+          // Remove password from user object
+          const { password: _, ...userWithoutPassword } = foundUser;
+          
+          // Save user to state and localStorage for demo
+          setUser(userWithoutPassword);
+          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+          
+          toast.success('Logged in successfully (demo mode)');
+          navigate('/dashboard');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      toast.error('Login failed: ' + (error instanceof Error ? error.message : 'Invalid credentials'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -116,32 +205,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name
+          }
+        }
+      });
       
-      // Check if user already exists
-      if (DEMO_USERS.some(u => u.email === email)) {
-        throw new Error('User already exists');
+      if (error) {
+        throw error;
       }
       
-      // In a real app, we would create a new user in the database
-      // For this demo, we'll just pretend we did
+      if (data.user) {
+        toast.success('Account created successfully! Please check your email for verification.');
+      } else {
+        toast.info('Please check your email to complete sign up.');
+      }
       
-      const newUser = {
-        id: String(DEMO_USERS.length + 1),
-        email,
-        name,
-        role: 'user' as const,
-        permissions: ['dashboard1']
-      };
-      
-      // Save user to state and localStorage
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      
-      toast.success('Account created successfully');
-      navigate('/dashboard');
-    } catch (error) {
+      // For demo purposes, we'll log them in right away
+      if (process.env.NODE_ENV === 'development') {
+        const newUser = {
+          id: data.user?.id || String(DEMO_USERS.length + 1),
+          email,
+          name,
+          role: 'user' as const,
+          permissions: ['dashboard1']
+        };
+        
+        setUser(newUser);
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
       console.error('Signup error:', error);
       toast.error('Signup failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
       throw error;
@@ -151,11 +248,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    toast.info('Logged out');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      localStorage.removeItem('user');
+      toast.info('Logged out');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed');
+    }
   };
 
   // Check if user has access to a specific dashboard
