@@ -114,14 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dashboardAccess.map(d => d.dashboard_id) 
         : ['dashboard1']; // Default permission
 
+      // Fix the type error by properly accessing the roles data
+      // The error is in this part, we need to check if userRoles exists and properly access the name property
+      const isAdmin = profile?.is_admin || 
+        (userRoles && userRoles.some(r => r.roles && typeof r.roles === 'object' && 'name' in r.roles && r.roles.name === 'admin'));
+
       // Create user object
       const userObject: AppUser = {
         id: session.user.id,
         email: session.user.email || '',
         name: profile?.email.split('@')[0] || session.user.email?.split('@')[0] || 'User',
-        role: (profile?.is_admin || userRoles?.some(r => r.roles?.name === 'admin')) 
-          ? 'admin' 
-          : 'user',
+        role: isAdmin ? 'admin' : 'user',
         permissions
       };
 
