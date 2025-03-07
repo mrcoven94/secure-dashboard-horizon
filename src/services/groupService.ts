@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Group, GroupMember, ExistingUser } from '@/types/group';
 
@@ -36,7 +37,9 @@ export async function fetchGroupMembers(groupId: string) {
           : 'Unknown Email';
       } else if (typeof member.profiles === 'object') {
         // If it's an object, take its email property
-        email = member.profiles.email || 'Unknown Email';
+        email = typeof member.profiles.email === 'string' 
+          ? member.profiles.email 
+          : 'Unknown Email';
       }
     }
 
