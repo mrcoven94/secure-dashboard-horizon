@@ -31,7 +31,11 @@ export async function fetchGroupMembers(groupId: string) {
     group_id: member.group_id,
     user_id: member.user_id,
     role: member.role,
-    email: member.profiles && typeof member.profiles === 'object' ? member.profiles.email : 'Unknown Email'
+    email: member.profiles && Array.isArray(member.profiles) && member.profiles.length > 0
+      ? member.profiles[0].email
+      : member.profiles && typeof member.profiles === 'object' 
+        ? member.profiles.email 
+        : 'Unknown Email'
   }));
 }
 
