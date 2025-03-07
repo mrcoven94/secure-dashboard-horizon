@@ -6,7 +6,7 @@ import {
   useEffect, 
   ReactNode 
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
 type User = {
@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check for saved auth on mount
   useEffect(() => {
@@ -67,6 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setIsLoading(false);
   }, []);
+
+  // Redirect authenticated users to dashboard if they access the login page
+  useEffect(() => {
+    if (user && location.pathname === '/login') {
+      navigate('/dashboard');
+    }
+  }, [user, location.pathname, navigate]);
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -147,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem('user');
     toast.info('Logged out');
-    navigate('/');
+    navigate('/login');
   };
 
   // Check if user has access to a specific dashboard
