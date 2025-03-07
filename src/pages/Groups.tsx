@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Folders, Plus, UserPlus, X, Users, Trash2 } from 'lucide-react';
+import { Folders, Plus, UserPlus, X, Users, Trash2, Edit } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -33,10 +34,14 @@ export default function Groups() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -93,6 +98,56 @@ export default function Groups() {
     } catch (error) {
       console.error('Error creating group:', error);
       toast.error('Failed to create group');
+    }
+  };
+
+  // Handle opening edit dialog
+  const handleOpenEditDialog = (group: Group) => {
+    setGroupToEdit(group);
+    setEditGroupName(group.name);
+    setEditGroupDesc(group.description || '');
+    setEditDialogOpen(true);
+  };
+
+  // Edit group
+  const handleEditGroup = async () => {
+    if (!editGroupName.trim() || !groupToEdit) {
+      toast.error('Group name is required');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .update({
+          name: editGroupName.trim(),
+          description: editGroupDesc.trim() || null,
+        })
+        .eq('id', groupToEdit.id);
+
+      if (error) throw error;
+
+      // Update the groups state with the edited group
+      setGroups(groups.map(group => 
+        group.id === groupToEdit.id 
+          ? { ...group, name: editGroupName.trim(), description: editGroupDesc.trim() || null } 
+          : group
+      ));
+      
+      // If the edited group is currently selected, update selectedGroup too
+      if (selectedGroup && selectedGroup.id === groupToEdit.id) {
+        setSelectedGroup({
+          ...selectedGroup,
+          name: editGroupName.trim(),
+          description: editGroupDesc.trim() || null
+        });
+      }
+      
+      setEditDialogOpen(false);
+      toast.success('Group updated successfully');
+    } catch (error) {
+      console.error('Error updating group:', error);
+      toast.error('Failed to update group');
     }
   };
 
@@ -327,13 +382,22 @@ export default function Groups() {
                           <Users className="mr-2 h-4 w-4" /> View Members
                         </Button>
                         {user?.role === 'admin' && (
-                          <Button 
-                            variant="destructive" 
-                            size="icon"
-                            onClick={() => handleDeleteGroup(group.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(group)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="icon"
+                              onClick={() => handleDeleteGroup(group.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </CardFooter>
                     </Card>
@@ -399,13 +463,22 @@ export default function Groups() {
                           >
                             <Users className="mr-2 h-4 w-4" /> View Members
                           </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="icon"
-                            onClick={() => handleDeleteGroup(group.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(group)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="icon"
+                              onClick={() => handleDeleteGroup(group.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </CardFooter>
                       </Card>
                     ))}
@@ -520,6 +593,46 @@ export default function Groups() {
             </Button>
             <Button onClick={handleCreateGroup}>
               Create Group
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Group Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Group</DialogTitle>
+            <DialogDescription>
+              Update group details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Group Name</Label>
+              <Input 
+                id="edit-name" 
+                value={editGroupName}
+                onChange={(e) => setEditGroupName(e.target.value)}
+                placeholder="Enter group name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <Input 
+                id="edit-description" 
+                value={editGroupDesc}
+                onChange={(e) => setEditGroupDesc(e.target.value)}
+                placeholder="Enter group description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditGroup}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
