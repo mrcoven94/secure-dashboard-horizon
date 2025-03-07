@@ -8,53 +8,45 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Globe, Users, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-
-// Sample dashboard data
-const DASHBOARDS = [
-  {
-    id: 'dashboard1',
-    title: 'Survey Overview',
-    description: 'High-level metrics and KPIs from the Horizons Survey',
-    url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Overview?:language=en-US&:display_count=n&:origin=viz_share_link',
-    category: 'overview',
-    icon: BarChart3
-  },
-  {
-    id: 'dashboard2',
-    title: 'Demographic Analysis',
-    description: 'Detailed breakdown of survey participants by demographics',
-    url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Customers?:language=en-US&:display_count=n&:origin=viz_share_link',
-    category: 'demographics',
-    icon: Users
-  },
-  {
-    id: 'dashboard3',
-    title: 'Regional Insights',
-    description: 'Geographic distribution and regional response patterns',
-    url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Geography?:language=en-US&:display_count=n&:origin=viz_share_link',
-    category: 'geography',
-    icon: Globe
-  }
-];
+import { Group } from '@/types/group';
 
 interface DashboardSelectorProps {
+  groups: Group[];
   currentDashboard: string;
   onSelect: (dashboardId: string) => void;
 }
 
-export function DashboardSelector({ currentDashboard, onSelect }: DashboardSelectorProps) {
+export function DashboardSelector({ groups, currentDashboard, onSelect }: DashboardSelectorProps) {
   const [category, setCategory] = useState<string>('all');
   const { user, checkAccess } = useAuth();
   
-  // Filter dashboards based on user permissions
-  const accessibleDashboards = DASHBOARDS.filter(dashboard => 
-    checkAccess(dashboard.id)
-  );
+  // Categorize groups based on their names
+  const categorizeGroup = (group: Group): string => {
+    const name = group.name.toLowerCase();
+    if (name.includes('overview')) return 'overview';
+    if (name.includes('demographic')) return 'demographics';
+    if (name.includes('geography') || name.includes('regional')) return 'geography';
+    return 'other';
+  };
+  
+  // Filter groups based on user permissions and selected category
+  const accessibleGroups = groups.filter(group => checkAccess(group.id));
   
   // Filter by category if not showing all
-  const filteredDashboards = category === 'all' 
-    ? accessibleDashboards 
-    : accessibleDashboards.filter(d => d.category === category);
+  const filteredGroups = category === 'all' 
+    ? accessibleGroups 
+    : accessibleGroups.filter(group => categorizeGroup(group) === category);
+
+  // Get icon based on category
+  const getGroupIcon = (group: Group) => {
+    const category = categorizeGroup(group);
+    switch (category) {
+      case 'overview': return BarChart3;
+      case 'demographics': return Users;
+      case 'geography': return Globe;
+      default: return BarChart3;
+    }
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -75,8 +67,8 @@ export function DashboardSelector({ currentDashboard, onSelect }: DashboardSelec
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold mb-1">Dashboard Catalog</h2>
-          <p className="text-muted-foreground">Select a dashboard to view detailed insights</p>
+          <h2 className="text-2xl font-semibold mb-1">Dashboard Groups</h2>
+          <p className="text-muted-foreground">Select a group to view detailed insights</p>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
@@ -124,56 +116,61 @@ export function DashboardSelector({ currentDashboard, onSelect }: DashboardSelec
         animate="show"
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
-        {filteredDashboards.map((dashboard) => (
-          <motion.div
-            key={dashboard.id}
-            variants={item}
-            transition={{ type: "spring", stiffness: 300, damping: 24 }}
-          >
-            <Card
-              className={cn(
-                "h-full overflow-hidden transition-all hover:shadow-md",
-                currentDashboard === dashboard.id ? 
-                  "ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-950" : 
-                  "hover:border-primary/20"
-              )}
-              onClick={() => onSelect(dashboard.id)}
+        {filteredGroups.map((group) => {
+          const Icon = getGroupIcon(group);
+          const groupCategory = categorizeGroup(group);
+          
+          return (
+            <motion.div
+              key={group.id}
+              variants={item}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
             >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-2 py-0 h-5">
-                    {dashboard.category}
-                  </Badge>
-                  <dashboard.icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <CardTitle className="text-xl mt-2">{dashboard.title}</CardTitle>
-                <CardDescription className="line-clamp-2">{dashboard.description}</CardDescription>
-              </CardHeader>
-              <CardFooter className="pt-2">
-                <Button 
-                  className="w-full"
-                  variant={currentDashboard === dashboard.id ? "default" : "secondary"}
-                >
-                  {currentDashboard === dashboard.id ? "Currently Viewing" : "View Dashboard"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </motion.div>
-        ))}
+              <Card
+                className={cn(
+                  "h-full overflow-hidden transition-all hover:shadow-md",
+                  currentDashboard === group.id ? 
+                    "ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-950" : 
+                    "hover:border-primary/20"
+                )}
+                onClick={() => onSelect(group.id)}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-2 py-0 h-5">
+                      {groupCategory}
+                    </Badge>
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <CardTitle className="text-xl mt-2">{group.name}</CardTitle>
+                  <CardDescription className="line-clamp-2">{group.description || 'No description available'}</CardDescription>
+                </CardHeader>
+                <CardFooter className="pt-2">
+                  <Button 
+                    className="w-full"
+                    variant={currentDashboard === group.id ? "default" : "secondary"}
+                  >
+                    {currentDashboard === group.id ? "Currently Viewing" : "View Dashboard"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          );
+        })}
         
-        {filteredDashboards.length === 0 && (
+        {filteredGroups.length === 0 && (
           <motion.div 
             variants={item}
             className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed rounded-lg border-muted"
           >
             <Filter className="h-10 w-10 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">No dashboards found in this category</p>
+            <p className="text-muted-foreground mb-2">No dashboard groups found in this category</p>
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => setCategory('all')}
             >
-              Show all dashboards
+              Show all dashboard groups
             </Button>
           </motion.div>
         )}
