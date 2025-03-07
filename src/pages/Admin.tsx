@@ -20,18 +20,19 @@ export default function Admin() {
     );
   }
   
-  // Redirect if not authenticated or not an admin
+  // Redirect if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   
-  if (user?.role !== 'admin') {
+  // Allow access for both admins and the specific email
+  if (user?.role !== 'admin' && user?.email !== 'mrcoven94@gmail.com') {
     return <Navigate to="/dashboard" replace />;
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

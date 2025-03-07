@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -22,7 +21,6 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when location changes
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
@@ -47,7 +45,6 @@ export function Header() {
           <span className="font-medium text-xl hidden md:inline-block">Horizons Analytics</span>
         </Link>
         
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           <Link 
             to="/" 
@@ -71,7 +68,7 @@ export function Header() {
                 Dashboards
               </Link>
               
-              {user?.role === 'admin' && (
+              {(user?.role === 'admin' || user?.email === 'mrcoven94@gmail.com') && (
                 <Link 
                   to="/admin" 
                   className={cn(
@@ -117,7 +114,6 @@ export function Header() {
           )}
         </div>
         
-        {/* Mobile menu button */}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -128,7 +124,6 @@ export function Header() {
         </Button>
       </div>
       
-      {/* Mobile menu */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -165,7 +160,7 @@ export function Header() {
                     Dashboards
                   </Link>
                   
-                  {user?.role === 'admin' && (
+                  {(user?.role === 'admin' || user?.email === 'mrcoven94@gmail.com') && (
                     <Link 
                       to="/admin" 
                       className={cn(

@@ -49,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Admin',
       path: '/admin',
       icon: <Shield size={18} />,
-      showTo: 'admin'
+      showTo: 'special' // Changed from 'admin' to 'special' for custom logic
     },
     {
       name: 'Users',
@@ -103,28 +103,33 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <nav className="flex-1 overflow-y-auto py-6 px-3">
             <div className="space-y-2">
               {navItems.map((item) => {
-                // Only show admin items to admins
-                if (item.showTo === 'admin' && user?.role !== 'admin') {
+                // Show admin items to admins OR to the specific email
+                if (item.showTo === 'special' && user?.role !== 'admin' && user?.email !== 'mrcoven94@gmail.com') {
                   return null;
                 }
                 
-                return (
-                  <Button
-                    key={item.path}
-                    variant={isActive(item.path) ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3",
-                      !sidebarOpen && "justify-center px-2",
-                      "h-10"
-                    )}
-                    asChild
-                  >
-                    <Link to={item.path}>
-                      {item.icon}
-                      {sidebarOpen && <span>{item.name}</span>}
-                    </Link>
-                  </Button>
-                );
+                // Show regular items to everyone
+                if (item.showTo === 'all' || (item.showTo === 'admin' && user?.role === 'admin')) {
+                  return (
+                    <Button
+                      key={item.path}
+                      variant={isActive(item.path) ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-3",
+                        !sidebarOpen && "justify-center px-2",
+                        "h-10"
+                      )}
+                      asChild
+                    >
+                      <Link to={item.path}>
+                        {item.icon}
+                        {sidebarOpen && <span>{item.name}</span>}
+                      </Link>
+                    </Button>
+                  );
+                }
+                
+                return null;
               })}
             </div>
           </nav>

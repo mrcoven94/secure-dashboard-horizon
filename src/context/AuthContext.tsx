@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -46,6 +45,14 @@ const DEMO_USERS = [
     name: 'Regular User',
     role: 'user' as const,
     permissions: ['dashboard1']
+  },
+  {
+    id: '3',
+    email: 'mrcoven94@gmail.com',
+    password: 'password123',
+    name: 'Your Admin',
+    role: 'admin' as const,
+    permissions: ['dashboard1', 'dashboard2', 'dashboard3']
   }
 ];
 
@@ -83,6 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
+      // Special case for your email
+      if (session.user.email === 'mrcoven94@gmail.com') {
+        const adminUser: AppUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: 'Your Admin',
+          role: 'admin',
+          permissions: ['dashboard1', 'dashboard2', 'dashboard3']
+        };
+        setUser(adminUser);
+        setIsLoading(false);
+        return;
+      }
+      
       // Get user profile from profiles table
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -114,8 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ? dashboardAccess.map(d => d.dashboard_id) 
         : ['dashboard1']; // Default permission
 
-      // Fix the type error by properly accessing the roles data
-      // The error is in this part, we need to check if userRoles exists and properly access the name property
+      // Check if user has admin role
       const isAdmin = profile?.is_admin || 
         (userRoles && userRoles.some(r => r.roles && typeof r.roles === 'object' && 'name' in r.roles && r.roles.name === 'admin'));
 
