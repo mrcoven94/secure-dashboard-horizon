@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -63,6 +62,37 @@ export function useGroups() {
     } catch (error) {
       console.error('Error fetching groups:', error);
       toast.error('Failed to load groups');
+      
+      // Add fallback demo groups when there's an error
+      if (process.env.NODE_ENV === 'development') {
+        const demoGroups: Group[] = [
+          {
+            id: '1',
+            name: 'Overview',
+            description: 'General dashboard metrics',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: user?.id || '1'
+          },
+          {
+            id: '2',
+            name: 'Demographics',
+            description: 'User demographics data',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: user?.id || '1'
+          },
+          {
+            id: '3',
+            name: 'Geography',
+            description: 'Geographic distribution data',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            created_by: user?.id || '1'
+          }
+        ];
+        setGroups(demoGroups);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,6 +106,22 @@ export function useGroups() {
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
+      
+      // Fallback for development
+      if (process.env.NODE_ENV === 'development') {
+        const demoUsers: ExistingUser[] = [
+          { id: '1', email: 'admin@example.com' },
+          { id: '2', email: 'user@example.com' },
+          { id: '3', email: 'mrcoven94@gmail.com' }
+        ];
+        
+        // Add current user if available
+        if (user && !demoUsers.some(u => u.email === user.email)) {
+          demoUsers.push({ id: user.id, email: user.email });
+        }
+        
+        setExistingUsers(demoUsers);
+      }
     } finally {
       setLoadingUsers(false);
     }
@@ -89,6 +135,39 @@ export function useGroups() {
     } catch (error) {
       console.error('Error fetching group members:', error);
       toast.error('Failed to load group members');
+      
+      // Fallback for development
+      if (process.env.NODE_ENV === 'development') {
+        const demoMembers: GroupMember[] = [
+          { 
+            id: '1', 
+            group_id: groupId, 
+            user_id: '1', 
+            role: 'admin', 
+            email: 'admin@example.com' 
+          },
+          { 
+            id: '2', 
+            group_id: groupId, 
+            user_id: '2', 
+            role: 'member', 
+            email: 'user@example.com' 
+          }
+        ];
+        
+        // Add current user if available
+        if (user) {
+          demoMembers.push({ 
+            id: '3', 
+            group_id: groupId, 
+            user_id: user.id, 
+            role: 'admin', 
+            email: user.email 
+          });
+        }
+        
+        setGroupMembers(demoMembers);
+      }
     } finally {
       setLoadingMembers(false);
     }
