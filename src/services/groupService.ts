@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Group, GroupMember, ExistingUser } from '@/types/group';
 
@@ -28,6 +29,7 @@ export async function fetchGroupMembers(groupId: string) {
   return data.map(member => {
     // Extract email, handling different possible structures
     let email = 'Unknown Email';
+    
     if (member.profiles) {
       if (Array.isArray(member.profiles)) {
         // If it's an array, take the first item's email
@@ -35,8 +37,11 @@ export async function fetchGroupMembers(groupId: string) {
           ? member.profiles[0].email 
           : 'Unknown Email';
       } else if (typeof member.profiles === 'object' && member.profiles !== null) {
-        // If it's an object, safely access its email property
-        email = member.profiles.hasOwnProperty('email') && typeof member.profiles.email === 'string'
+        // If it's an object with email property
+        email = typeof member.profiles === 'object' && 
+               member.profiles !== null && 
+               'email' in member.profiles && 
+               typeof member.profiles.email === 'string'
           ? member.profiles.email 
           : 'Unknown Email';
       }

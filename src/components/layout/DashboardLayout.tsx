@@ -49,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Admin',
       path: '/admin',
       icon: <Shield size={18} />,
-      showTo: 'special' // Changed from 'admin' to 'special' for custom logic
+      showTo: 'admin'
     },
     {
       name: 'Users',
@@ -104,12 +104,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="space-y-2">
               {navItems.map((item) => {
                 // Show admin items to admins OR to the specific email
-                if (item.showTo === 'special' && user?.role !== 'admin' && user?.email !== 'mrcoven94@gmail.com') {
+                if (item.showTo === 'admin' && user?.role !== 'admin' && user?.email !== 'mrcoven94@gmail.com') {
                   return null;
                 }
                 
                 // Show regular items to everyone
-                if (item.showTo === 'all' || (item.showTo === 'admin' && user?.role === 'admin')) {
+                if (item.showTo === 'all' || (item.showTo === 'admin' && (user?.role === 'admin' || user?.email === 'mrcoven94@gmail.com'))) {
                   return (
                     <Button
                       key={item.path}

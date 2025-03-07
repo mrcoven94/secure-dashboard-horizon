@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -57,29 +58,15 @@ export function Header() {
           </Link>
           
           {isAuthenticated && (
-            <>
-              <Link 
-                to="/dashboard" 
-                className={cn(
-                  "text-sm transition-colors hover:text-primary",
-                  location.pathname.startsWith('/dashboard') ? 'text-primary font-medium' : 'text-muted-foreground'
-                )}
-              >
-                Dashboards
-              </Link>
-              
-              {(user?.role === 'admin' || user?.email === 'mrcoven94@gmail.com') && (
-                <Link 
-                  to="/admin" 
-                  className={cn(
-                    "text-sm transition-colors hover:text-primary",
-                    location.pathname === '/admin' ? 'text-primary font-medium' : 'text-muted-foreground'
-                  )}
-                >
-                  Admin
-                </Link>
+            <Link 
+              to="/dashboard" 
+              className={cn(
+                "text-sm transition-colors hover:text-primary",
+                location.pathname.startsWith('/dashboard') ? 'text-primary font-medium' : 'text-muted-foreground'
               )}
-            </>
+            >
+              Dashboards
+            </Link>
           )}
         </nav>
         
@@ -159,20 +146,6 @@ export function Header() {
                   >
                     Dashboards
                   </Link>
-                  
-                  {(user?.role === 'admin' || user?.email === 'mrcoven94@gmail.com') && (
-                    <Link 
-                      to="/admin" 
-                      className={cn(
-                        "px-4 py-2 rounded-md transition-colors",
-                        location.pathname === '/admin' 
-                          ? 'bg-primary/10 text-primary font-medium' 
-                          : 'hover:bg-muted'
-                      )}
-                    >
-                      Admin
-                    </Link>
-                  )}
                   
                   <div className="border-t border-gray-100 dark:border-gray-800 my-2 pt-2">
                     <div className="px-4 py-2 flex items-center gap-2">
