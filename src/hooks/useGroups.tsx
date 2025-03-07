@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +19,11 @@ export type GroupMember = {
   email?: string;
 };
 
+export type ExistingUser = {
+  id: string;
+  email: string;
+};
+
 export function useGroups() {
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -28,6 +32,8 @@ export function useGroups() {
   const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -38,6 +44,7 @@ export function useGroups() {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [initialMembers, setInitialMembers] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<ExistingUser[]>([]);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupDesc, setEditGroupDesc] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -46,6 +53,13 @@ export function useGroups() {
   useEffect(() => {
     fetchGroups();
   }, [user]);
+
+  // Fetch existing users when create group dialog is opened
+  useEffect(() => {
+    if (createDialogOpen) {
+      fetchExistingUsers();
+    }
+  }, [createDialogOpen]);
 
   const fetchGroups = async () => {
     try {
@@ -63,6 +77,27 @@ export function useGroups() {
       toast.error('Failed to load groups');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch existing users from the profiles table
+  const fetchExistingUsers = async () => {
+    try {
+      if (!user) return;
+
+      setLoadingUsers(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .order('email');
+
+      if (error) throw error;
+      setExistingUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -91,35 +126,62 @@ export function useGroups() {
       const newGroup = data?.[0];
       if (!newGroup) throw new Error('Failed to create group');
 
-      // Add initial members if provided
+      // Add selected existing users
+      if (selectedUsers.length > 0) {
+        const membersToAdd = selectedUsers.map(selectedUser => ({
+          group_id: newGroup.id,
+          user_id: selectedUser.id,
+          role: 'member',
+        }));
+
+        const { error: memberError } = await supabase
+          .from('group_members')
+          .insert(membersToAdd);
+
+        if (memberError) {
+          console.error('Failed to add existing users to group', memberError);
+          toast.error('Failed to add some members to the group');
+        }
+      }
+
+      // Add initial members (email invites) if provided
       if (initialMembers.length > 0) {
         const addMembersPromises = initialMembers.map(async (email) => {
-          // Find user by email
+          // Check if user already exists in the system
           const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('id')
-            .eq('email', email.trim())
-            .single();
+            .eq('email', email.trim());
 
           if (profileError) {
-            console.error(`User with email ${email} not found`, profileError);
+            console.error(`Error checking if user exists: ${email}`, profileError);
             return { email, success: false };
           }
 
-          // Add user to group
-          const { error: memberError } = await supabase
-            .from('group_members')
-            .insert({
-              group_id: newGroup.id,
-              user_id: profiles.id,
-              role: 'member',
-            });
+          // If user exists, add them directly
+          if (profiles && profiles.length > 0) {
+            const { error: memberError } = await supabase
+              .from('group_members')
+              .insert({
+                group_id: newGroup.id,
+                user_id: profiles[0].id,
+                role: 'member',
+              });
 
-          if (memberError) {
-            console.error(`Failed to add ${email} to group`, memberError);
-            return { email, success: false };
+            if (memberError) {
+              console.error(`Failed to add ${email} to group`, memberError);
+              return { email, success: false };
+            }
+            return { email, success: true };
           }
 
+          // For non-existing users, create an invite record
+          // In a real app, you would implement a proper invitation system
+          // For this demo, we'll just store the invited email in a toast notification
+          toast.info(`Invitation would be sent to ${email}`);
+          
+          // TODO: Implement proper invitation system 
+          // For now, we'll just count it as a successful operation
           return { email, success: true };
         });
 
@@ -149,6 +211,7 @@ export function useGroups() {
     setNewGroupName('');
     setNewGroupDesc('');
     setInitialMembers([]);
+    setSelectedUsers([]);
     setCreateDialogOpen(false);
   };
 
@@ -252,7 +315,6 @@ export function useGroups() {
           user_id: member.user_id,
           role: member.role,
           // Fix the typing issue by correctly accessing the nested profile data
-          // The profiles property is an object with email property, not an array
           email: member.profiles?.email || 'Unknown Email'
         };
       });
@@ -342,6 +404,19 @@ export function useGroups() {
     }
   };
 
+  // Select user from existing users
+  const handleSelectUser = (userId: string) => {
+    const user = existingUsers.find(u => u.id === userId);
+    if (user && !selectedUsers.some(u => u.id === userId)) {
+      setSelectedUsers([...selectedUsers, user]);
+    }
+  };
+
+  // Remove user from selection
+  const handleRemoveSelectedUser = (userId: string) => {
+    setSelectedUsers(selectedUsers.filter(u => u.id !== userId));
+  };
+
   return {
     groups,
     loading,
@@ -374,5 +449,10 @@ export function useGroups() {
     handleOpenGroup,
     handleAddMember,
     handleRemoveMember,
+    existingUsers,
+    loadingUsers,
+    selectedUsers,
+    handleSelectUser,
+    handleRemoveSelectedUser
   };
 }

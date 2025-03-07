@@ -47,6 +47,12 @@ export default function Groups() {
     handleOpenGroup,
     handleAddMember,
     handleRemoveMember,
+    // New properties for user selection
+    existingUsers,
+    loadingUsers,
+    selectedUsers,
+    handleSelectUser,
+    handleRemoveSelectedUser
   } = useGroups();
 
   return (
@@ -201,6 +207,12 @@ export default function Groups() {
         initialMembers={initialMembers}
         setInitialMembers={setInitialMembers}
         onCreateGroup={handleCreateGroup}
+        // New props for user selection
+        existingUsers={existingUsers}
+        loadingUsers={loadingUsers}
+        selectedUsers={selectedUsers}
+        onSelectUser={handleSelectUser}
+        onRemoveSelectedUser={handleRemoveSelectedUser}
       />
 
       {/* Edit Group Dialog */}
