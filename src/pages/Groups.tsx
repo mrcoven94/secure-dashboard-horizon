@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
@@ -116,13 +115,20 @@ export default function Groups() {
       if (error) throw error;
 
       // Format the data to get email from profiles
-      const formattedData = data.map(member => ({
-        id: member.id,
-        group_id: member.group_id,
-        user_id: member.user_id,
-        role: member.role,
-        email: member.profiles ? member.profiles.email : 'Unknown Email'
-      }));
+      const formattedData = data.map(member => {
+        // Check if profiles exists and has a first item with email
+        const profileEmail = Array.isArray(member.profiles) && member.profiles.length > 0
+          ? member.profiles[0]?.email 
+          : 'Unknown Email';
+          
+        return {
+          id: member.id,
+          group_id: member.group_id,
+          user_id: member.user_id,
+          role: member.role,
+          email: profileEmail
+        };
+      });
 
       setGroupMembers(formattedData);
     } catch (error) {
