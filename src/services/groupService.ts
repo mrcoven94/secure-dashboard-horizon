@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Group, GroupMember, ExistingUser } from '@/types/group';
 
@@ -19,34 +18,53 @@ export async function fetchGroupMembers(groupId: string) {
       group_id,
       user_id,
       role,
-      profiles(email)
+      profiles:user_id(email)
     `)
     .eq('group_id', groupId);
   
   if (error) throw error;
 
   // Format the data to get email from profiles
-  return data.map(member => ({
-    id: member.id,
-    group_id: member.group_id,
-    user_id: member.user_id,
-    role: member.role,
-    email: member.profiles && Array.isArray(member.profiles) && member.profiles.length > 0
-      ? member.profiles[0].email
-      : member.profiles && typeof member.profiles === 'object' 
-        ? member.profiles.email 
-        : 'Unknown Email'
-  }));
+  return data.map(member => {
+    // Extract email, handling different possible structures
+    let email = 'Unknown Email';
+    if (member.profiles) {
+      if (Array.isArray(member.profiles)) {
+        // If it's an array, take the first item's email
+        email = member.profiles.length > 0 && member.profiles[0]?.email 
+          ? member.profiles[0].email 
+          : 'Unknown Email';
+      } else if (typeof member.profiles === 'object') {
+        // If it's an object, take its email property
+        email = member.profiles.email || 'Unknown Email';
+      }
+    }
+
+    return {
+      id: member.id,
+      group_id: member.group_id,
+      user_id: member.user_id,
+      role: member.role,
+      email: email
+    };
+  });
 }
 
 export async function fetchExistingUsers() {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, email')
-    .order('email');
+  try {
+    // Fetch profiles directly without relying on complex relationships
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .order('email');
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching existing users:', error);
+    // Return empty array as fallback to prevent UI from breaking
+    return [];
+  }
 }
 
 export async function createGroup(
