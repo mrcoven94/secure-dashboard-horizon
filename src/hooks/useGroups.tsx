@@ -252,6 +252,7 @@ export function useGroups() {
           user_id: member.user_id,
           role: member.role,
           // Fix the typing issue by correctly accessing the nested profile data
+          // The profiles property is an object with email property, not an array
           email: member.profiles?.email || 'Unknown Email'
         };
       });
