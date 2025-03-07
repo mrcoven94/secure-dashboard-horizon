@@ -37,6 +37,7 @@ export function useGroups() {
   // Form states
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
+  const [initialMembers, setInitialMembers] = useState<string[]>([]);
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupDesc, setEditGroupDesc] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -75,6 +76,7 @@ export function useGroups() {
     try {
       if (!user) return;
 
+      // Create the group
       const { data, error } = await supabase
         .from('groups')
         .insert({
@@ -86,15 +88,68 @@ export function useGroups() {
 
       if (error) throw error;
 
-      setGroups([...(data || []), ...groups]);
-      setNewGroupName('');
-      setNewGroupDesc('');
-      setCreateDialogOpen(false);
+      const newGroup = data?.[0];
+      if (!newGroup) throw new Error('Failed to create group');
+
+      // Add initial members if provided
+      if (initialMembers.length > 0) {
+        const addMembersPromises = initialMembers.map(async (email) => {
+          // Find user by email
+          const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email.trim())
+            .single();
+
+          if (profileError) {
+            console.error(`User with email ${email} not found`, profileError);
+            return { email, success: false };
+          }
+
+          // Add user to group
+          const { error: memberError } = await supabase
+            .from('group_members')
+            .insert({
+              group_id: newGroup.id,
+              user_id: profiles.id,
+              role: 'member',
+            });
+
+          if (memberError) {
+            console.error(`Failed to add ${email} to group`, memberError);
+            return { email, success: false };
+          }
+
+          return { email, success: true };
+        });
+
+        const results = await Promise.all(addMembersPromises);
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+
+        if (successful > 0 && failed === 0) {
+          toast.success(`Added all ${successful} members to the group`);
+        } else if (successful > 0 && failed > 0) {
+          toast.info(`Added ${successful} members, but ${failed} failed. Check logs for details.`);
+        } else if (failed > 0) {
+          toast.error(`Failed to add ${failed} members. Check logs for details.`);
+        }
+      }
+
+      setGroups([newGroup, ...groups]);
+      resetCreateGroupForm();
       toast.success('Group created successfully');
     } catch (error) {
       console.error('Error creating group:', error);
       toast.error('Failed to create group');
     }
+  };
+
+  const resetCreateGroupForm = () => {
+    setNewGroupName('');
+    setNewGroupDesc('');
+    setInitialMembers([]);
+    setCreateDialogOpen(false);
   };
 
   // Handle opening edit dialog
@@ -176,7 +231,6 @@ export function useGroups() {
   const fetchGroupMembers = async (groupId: string) => {
     setLoadingMembers(true);
     try {
-      // Fetch group members with profile information
       const { data, error } = await supabase
         .from('group_members')
         .select(`
@@ -184,7 +238,7 @@ export function useGroups() {
           group_id,
           user_id,
           role,
-          profiles:profiles(email)
+          profiles(email)
         `)
         .eq('group_id', groupId);
       
@@ -197,7 +251,7 @@ export function useGroups() {
           group_id: member.group_id,
           user_id: member.user_id,
           role: member.role,
-          email: member.profiles && member.profiles.length > 0 ? member.profiles[0]?.email : 'Unknown Email'
+          email: member.profiles?.email || 'Unknown Email'
         };
       });
 
@@ -303,6 +357,8 @@ export function useGroups() {
     setNewGroupName,
     newGroupDesc,
     setNewGroupDesc,
+    initialMembers,
+    setInitialMembers,
     editGroupName,
     setEditGroupName,
     editGroupDesc,

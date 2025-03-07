@@ -32,6 +32,8 @@ export default function Groups() {
     setNewGroupName,
     newGroupDesc,
     setNewGroupDesc,
+    initialMembers,
+    setInitialMembers,
     editGroupName,
     setEditGroupName,
     editGroupDesc,
@@ -196,6 +198,8 @@ export default function Groups() {
         setNewGroupName={setNewGroupName}
         newGroupDesc={newGroupDesc}
         setNewGroupDesc={setNewGroupDesc}
+        initialMembers={initialMembers}
+        setInitialMembers={setInitialMembers}
         onCreateGroup={handleCreateGroup}
       />
 
