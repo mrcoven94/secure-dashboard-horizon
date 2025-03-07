@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -314,8 +315,8 @@ export function useGroups() {
           group_id: member.group_id,
           user_id: member.user_id,
           role: member.role,
-          // Fix the typing issue by correctly accessing the nested profile data
-          email: member.profiles?.email || 'Unknown Email'
+          // Correctly access the nested profile data
+          email: member.profiles ? member.profiles.email : 'Unknown Email'
         };
       });
 
