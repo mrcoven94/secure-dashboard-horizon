@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Header } from './Header';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, LayoutDashboard, Users, UserCircle, Settings, Folders, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, Users, UserCircle, Settings, Folders, Shield, ListPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Navigate, useLocation, Link } from 'react-router-dom';
@@ -43,6 +43,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Dashboards',
       path: '/dashboard',
       icon: <LayoutDashboard size={18} />,
+      showTo: 'all'
+    },
+    {
+      name: 'Manage Dashboards',
+      path: '/dashboard/manage',
+      icon: <ListPlus size={18} />,
       showTo: 'all'
     },
     {
