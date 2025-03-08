@@ -7,6 +7,7 @@ export type Dashboard = {
   tableau_url?: string | null;
   embed_code?: string | null;
   visibility: string;
+  status: 'draft' | 'published';
   groups?: string[];
   created_at: string;
   created_by: string;

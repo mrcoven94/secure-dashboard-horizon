@@ -30,6 +30,7 @@ export function useDashboards() {
             description: 'General sales metrics and KPIs',
             url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Overview?:language=en-US&:display_count=n&:origin=viz_share_link',
             visibility: 'public',
+            status: 'published',
             groups: ['Sales Team', 'Executive', 'All Users'],
             created_at: new Date().toISOString(),
             created_by: user?.id || '1',
@@ -42,6 +43,7 @@ export function useDashboards() {
             description: 'Customer segment analysis by age, gender, and income',
             url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Customers?:language=en-US&:display_count=n&:origin=viz_share_link',
             visibility: 'private',
+            status: 'draft',
             groups: ['Marketing Team', 'Executive'],
             created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
             created_by: user?.id || '1',
@@ -54,6 +56,7 @@ export function useDashboards() {
             description: 'Sales analysis by region and location',
             url: 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Geography?:language=en-US&:display_count=n&:origin=viz_share_link',
             visibility: 'private',
+            status: 'published',
             groups: ['Sales Team', 'Regional Managers'],
             created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             created_by: user?.id || '1',
@@ -67,6 +70,7 @@ export function useDashboards() {
             description: 'Embedded code dashboard example',
             embed_code: '<div class="tableauPlaceholder" id="viz1739491668083" style="position: relative"><noscript><a href="#"><img alt="Available Homes by Income - Homeownership Rate " src="https://public.tableau.com/static/images/Ho/HomesteadHousingSupplyDashboard2024_17255831409130/AvailableHomesbyIncome-HomeownershipRate/1_rss.png" style="border: none" /></a></noscript><object class="tableauViz" style="display:none;"><param name="host_url" value="https%3A%2F%2Fpublic.tableau.com%2F" /> <param name="embed_code_version" value="3" /> <param name="site_root" value="" /><param name="name" value="HomesteadHousingSupplyDashboard2024_17255831409130%2FAvailableHomesbyIncome-HomeownershipRate" /><param name="tabs" value="no" /><param name="toolbar" value="yes" /><param name="static_image" value="https%3A%2F%2Fpublic.tableau.com%2Fstatic%2Fimages%2FHo%2FHomesteadHousingSupplyDashboard2024_17255831409130%2FAvailableHomesbyIncome-HomeownershipRate%2F1.png" /> <param name="animate_transition" value="yes" /><param name="display_static_image" value="yes" /><param name="display_spinner" value="yes" /><param name="display_overlay" value="yes" /><param name="display_count" value="yes" /><param name="language" value="en-US" /></object></div><script type="text/javascript">var divElement = document.getElementById("viz1739491668083");var vizElement = divElement.getElementsByTagName("object")[0];vizElement.style.width="1400px";vizElement.style.height="927px";var scriptElement = document.createElement("script");scriptElement.src = "https://public.tableau.com/javascripts/api/viz_v1.js";vizElement.parentNode.insertBefore(scriptElement, vizElement);</script>',
             visibility: 'public',
+            status: 'published',
             groups: ['All Users'],
             created_at: new Date().toISOString(),
             created_by: user?.id || '1',
@@ -133,6 +137,7 @@ export function useDashboards() {
     url?: string;
     embed_code?: string;
     visibility: string;
+    status?: 'draft' | 'published';
     groups: string[];
   }) => {
     try {
@@ -144,6 +149,7 @@ export function useDashboards() {
           name: data.name,
           url: data.url,
           embed_code: data.embed_code,
+          status: data.status || 'draft',
           created_at: new Date().toISOString(),
           created_by: user?.id || '1',
           updated_at: new Date().toISOString(),
@@ -164,6 +170,7 @@ export function useDashboards() {
             tableau_url: data.url || null,
             embed_code: data.embed_code || null,
             visibility: data.visibility,
+            status: data.status || 'draft',
             user_id: user?.id
           }
         ])
@@ -226,6 +233,7 @@ export function useDashboards() {
           tableau_url: data.url || null,
           embed_code: data.embed_code || null,
           visibility: data.visibility,
+          status: data.status,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)

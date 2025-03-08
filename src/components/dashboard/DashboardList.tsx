@@ -6,10 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Edit, Trash2, ExternalLink, Eye, EyeOff, Users } from 'lucide-react';
+import { Edit, Trash2, ExternalLink, Eye, EyeOff, Users, FileCheck, ListFilter } from 'lucide-react';
 import { DashboardDialog } from '@/components/dashboard/DashboardDialog';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DashboardListProps {
@@ -61,6 +69,17 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
     }
   };
 
+  const handleTogglePublish = (dashboard: Dashboard) => {
+    const newStatus = dashboard.status === 'published' ? 'draft' : 'published';
+    onUpdate(dashboard.id, { status: newStatus });
+    
+    toast.success(
+      newStatus === 'published' 
+        ? 'Dashboard published successfully' 
+        : 'Dashboard moved to draft mode'
+    );
+  };
+
   return (
     <TooltipProvider>
       <Card className="overflow-hidden border border-border/40">
@@ -69,6 +88,7 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Visibility</TableHead>
                 <TableHead>Groups</TableHead>
                 <TableHead>Created</TableHead>
@@ -82,7 +102,7 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="group"
+                  className={`group ${dashboard.status === 'draft' ? 'bg-yellow-50/10' : ''}`}
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -108,6 +128,17 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
                         )}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {dashboard.status === 'draft' ? (
+                      <Badge variant="outline" className="bg-yellow-100/50 text-yellow-800 border-yellow-200">
+                        Draft
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-green-100/50 text-green-800 border-green-200">
+                        Published
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     {dashboard.visibility === 'public' ? (
@@ -137,19 +168,38 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Tooltip>
+                      <DropdownMenu>
                         <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => navigate(`/dashboard/${dashboard.id}`)}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
                         </TooltipTrigger>
-                        <TooltipContent>View Dashboard</TooltipContent>
-                      </Tooltip>
+                        <TooltipContent>Actions</TooltipContent>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/dashboard/${dashboard.id}`)}>
+                            <ExternalLink className="mr-2 h-4 w-4" /> View
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleTogglePublish(dashboard)}>
+                            {dashboard.status === 'published' ? (
+                              <>
+                                <ListFilter className="mr-2 h-4 w-4" /> Unpublish
+                              </>
+                            ) : (
+                              <>
+                                <FileCheck className="mr-2 h-4 w-4" /> Publish
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -163,6 +213,7 @@ export function DashboardList({ dashboards, onDelete, onUpdate }: DashboardListP
                         </TooltipTrigger>
                         <TooltipContent>Edit Dashboard</TooltipContent>
                       </Tooltip>
+                      
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

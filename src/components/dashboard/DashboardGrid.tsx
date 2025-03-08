@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { MoreHorizontal, Edit, Trash2, ExternalLink, Users, Eye, EyeOff } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, ExternalLink, Users, Eye, EyeOff, ListFilter, FileCheck } from 'lucide-react';
 import { Dashboard } from '@/types/dashboard';
 import { DashboardDialog } from '@/components/dashboard/DashboardDialog';
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface DashboardGridProps {
   dashboards: Dashboard[];
@@ -65,6 +67,17 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
     }
   };
 
+  const handleTogglePublish = (dashboard: Dashboard) => {
+    const newStatus = dashboard.status === 'published' ? 'draft' : 'published';
+    onUpdate(dashboard.id, { status: newStatus });
+    
+    toast.success(
+      newStatus === 'published' 
+        ? 'Dashboard published successfully' 
+        : 'Dashboard moved to draft mode'
+    );
+  };
+
   const getThumbnailUrl = (dashboard: Dashboard) => {
     if (dashboard.thumbnail_url) return dashboard.thumbnail_url;
     return 'https://placehold.co/600x400/e2e8f0/6b7280?text=Dashboard';
@@ -95,7 +108,7 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
       >
         {dashboards.map((dashboard) => (
           <motion.div key={dashboard.id} variants={itemAnimation}>
-            <Card className="overflow-hidden h-full flex flex-col transition-all duration-200 hover:shadow-md border border-border/40">
+            <Card className={`overflow-hidden h-full flex flex-col transition-all duration-200 hover:shadow-md border ${dashboard.status === 'draft' ? 'border-yellow-200 bg-yellow-50/10' : 'border-border/40'}`}>
               <div className="relative overflow-hidden aspect-video bg-muted/50">
                 <img
                   src={getThumbnailUrl(dashboard)}
@@ -116,6 +129,22 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
                       <DropdownMenuItem onClick={() => handleEdit(dashboard)}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleTogglePublish(dashboard)}
+                        className={dashboard.status === 'published' ? 'text-amber-600' : 'text-green-600'}
+                      >
+                        {dashboard.status === 'published' ? (
+                          <>
+                            <ListFilter className="mr-2 h-4 w-4" /> Unpublish
+                          </>
+                        ) : (
+                          <>
+                            <FileCheck className="mr-2 h-4 w-4" /> Publish
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => handleDelete(dashboard.id)}
                         className="text-destructive"
@@ -128,17 +157,28 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
               </div>
               
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                   <CardTitle className="text-xl truncate">{dashboard.name}</CardTitle>
-                  {dashboard.visibility === 'public' ? (
-                    <Badge variant="outline" className="bg-primary/10 text-xs">
-                      <Eye className="h-3 w-3 mr-1" /> Public
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-secondary/10 text-xs">
-                      <EyeOff className="h-3 w-3 mr-1" /> Private
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {dashboard.status === 'draft' ? (
+                      <Badge variant="outline" className="bg-yellow-100/50 text-yellow-800 border-yellow-200 text-xs">
+                        Draft
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-green-100/50 text-green-800 border-green-200 text-xs">
+                        Published
+                      </Badge>
+                    )}
+                    {dashboard.visibility === 'public' ? (
+                      <Badge variant="outline" className="bg-primary/10 text-xs">
+                        <Eye className="h-3 w-3 mr-1" /> Public
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-secondary/10 text-xs">
+                        <EyeOff className="h-3 w-3 mr-1" /> Private
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 {dashboard.description && (
                   <CardDescription className="line-clamp-2 h-10">

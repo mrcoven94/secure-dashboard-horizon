@@ -15,6 +15,7 @@ interface DashboardEmbedProps {
   url?: string;
   embedCode?: string;
   hideControls?: boolean;
+  status?: 'draft' | 'published';
 }
 
 export function DashboardEmbed({ 
@@ -22,7 +23,8 @@ export function DashboardEmbed({
   title, 
   url, 
   embedCode, 
-  hideControls = false 
+  hideControls = false,
+  status = 'published'
 }: DashboardEmbedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -68,6 +70,21 @@ export function DashboardEmbed({
           <CardTitle className="text-xl mb-2">Access Restricted</CardTitle>
           <CardDescription className="text-center max-w-md mb-4">
             You don't have permission to view this dashboard. Please contact an administrator if you believe this is a mistake.
+          </CardDescription>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show a "draft mode" message if the dashboard is not published
+  if (status === 'draft') {
+    return (
+      <Card className="bg-yellow-50/30 backdrop-blur-sm border-yellow-200">
+        <CardContent className="flex flex-col items-center justify-center h-full p-6">
+          <div className="text-4xl mb-4">📝</div>
+          <CardTitle className="text-xl mb-2">Dashboard in Draft Mode</CardTitle>
+          <CardDescription className="text-center max-w-md mb-4">
+            This dashboard is currently in draft mode and not accessible to users. Publish it to make it available.
           </CardDescription>
         </CardContent>
       </Card>

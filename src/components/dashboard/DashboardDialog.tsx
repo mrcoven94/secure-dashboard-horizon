@@ -43,6 +43,7 @@ const formSchema = z.object({
   url: z.string().optional(),
   embedCode: z.string().optional(),
   visibility: z.string().min(1, 'Visibility is required'),
+  status: z.enum(['draft', 'published']),
   groups: z.array(z.string()).optional(),
 }).refine(data => {
   // Ensure either URL or embed code is provided based on embedType
@@ -85,6 +86,7 @@ export function DashboardDialog({
       url: '',
       embedCode: '',
       visibility: 'private',
+      status: 'draft',
       groups: [],
     },
   });
@@ -107,6 +109,7 @@ export function DashboardDialog({
         url: dashboard.url || dashboard.tableau_url || '',
         embedCode: dashboard.embed_code || '',
         visibility: dashboard.visibility || 'private',
+        status: dashboard.status || 'draft',
         groups: dashboard.groups || [],
       });
     } else if (mode === 'create') {
@@ -117,6 +120,7 @@ export function DashboardDialog({
         url: '',
         embedCode: '',
         visibility: 'private',
+        status: 'draft',
         groups: [],
       });
       setEmbedType('url');
@@ -249,34 +253,65 @@ export function DashboardDialog({
               />
             )}
 
-            <FormField
-              control={form.control}
-              name="visibility"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visibility</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select visibility" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="private">Private (Groups Only)</SelectItem>
-                      <SelectItem value="public">Public (All Users)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Who can view this dashboard
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="visibility"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Visibility</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select visibility" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="private">Private (Groups Only)</SelectItem>
+                        <SelectItem value="public">Public (All Users)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Who can view this dashboard
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Dashboard visibility to end users
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
