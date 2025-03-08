@@ -20,6 +20,8 @@ export default function Dashboard() {
   
   // Only display published dashboards to regular users
   const publishedDashboards = dashboards.filter(dashboard => dashboard.status === 'published');
+  // Admin users will see all dashboards with status indicators
+  const visibleDashboards = user?.role === 'admin' ? dashboards : publishedDashboards;
 
   const EmptyDashboardState = () => (
     <motion.div
@@ -32,7 +34,9 @@ export default function Dashboard() {
         <FileX className="h-16 w-16 mb-6 sm:h-20 sm:w-20 md:h-24 md:w-24 text-muted-foreground/70" />
         <h2 className="text-xl font-semibold mb-3">No Dashboards Available</h2>
         <p className="text-muted-foreground mb-6">
-          There are no analytics dashboards available at this time. Please check back later or contact your administrator.
+          {user?.role === 'admin' 
+            ? "You haven't created any dashboards yet. Get started by adding your first dashboard."
+            : "There are no analytics dashboards available at this time. Please check back later or contact your administrator."}
         </p>
         <div className="flex gap-3">
           <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
@@ -97,11 +101,11 @@ export default function Dashboard() {
                 <p className="text-muted-foreground animate-pulse">Loading dashboards...</p>
               </div>
             </div>
-          ) : publishedDashboards.length === 0 ? (
+          ) : visibleDashboards.length === 0 ? (
             <EmptyDashboardState />
           ) : (
             <div className="grid grid-cols-1 gap-8">
-              {publishedDashboards.map((dashboard, index) => (
+              {visibleDashboards.map((dashboard, index) => (
                 <motion.div
                   key={dashboard.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -109,13 +113,24 @@ export default function Dashboard() {
                   transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
                 >
                   <Card 
-                    className="w-full border border-border/40 bg-card/30 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
+                    className={`w-full border ${
+                      dashboard.status === 'draft' 
+                        ? 'border-yellow-200 bg-yellow-50/10' 
+                        : 'border-border/40 bg-card/30'
+                    } backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300`}
                   >
                     <CardHeader className="pb-2 pt-6">
                       <div className="flex flex-col gap-3">
-                        <CardTitle className="text-xl md:text-2xl font-bold text-foreground/90">
-                          {dashboard.name}
-                        </CardTitle>
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-xl md:text-2xl font-bold text-foreground/90">
+                            {dashboard.name}
+                          </CardTitle>
+                          {user?.role === 'admin' && dashboard.status === 'draft' && (
+                            <Badge variant="outline" className="bg-yellow-100/50 text-yellow-800 border-yellow-200">
+                              Draft
+                            </Badge>
+                          )}
+                        </div>
                         <CardDescription className="line-clamp-2 text-sm md:text-base">
                           {dashboard.description || 'No description available'}
                         </CardDescription>
