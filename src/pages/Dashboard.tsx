@@ -4,12 +4,13 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardEmbed } from '@/components/dashboard/DashboardEmbed';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileX } from 'lucide-react';
 import { fetchGroups } from '@/services/groupService';
 import { Group } from '@/types/group';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 // Sample dashboard URLs mapped to group IDs (would ideally come from a database)
 const DASHBOARD_URLS: Record<string, string> = {
@@ -82,6 +83,26 @@ export default function Dashboard() {
     loadDashboards();
   }, [user]);
 
+  const EmptyDashboardState = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col items-center justify-center p-8 h-[60vh]"
+    >
+      <div className="flex flex-col items-center justify-center text-center max-w-md">
+        <FileX className="h-16 w-16 mb-6 sm:h-20 sm:w-20 md:h-24 md:w-24 text-muted-foreground/70" />
+        <h2 className="text-xl font-semibold mb-3">No Dashboards Available</h2>
+        <p className="text-muted-foreground mb-6">
+          There are no analytics dashboards available at this time. Please check back later or contact your administrator.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+          Refresh
+        </Button>
+      </div>
+    </motion.div>
+  );
+
   return (
     <DashboardLayout>
       <div className="min-h-screen overflow-auto pb-10">
@@ -117,6 +138,8 @@ export default function Dashboard() {
                 <p className="text-muted-foreground animate-pulse">Loading dashboards...</p>
               </div>
             </div>
+          ) : dashboards.length === 0 ? (
+            <EmptyDashboardState />
           ) : (
             <div className="grid grid-cols-1 gap-8">
               {dashboards.map((dashboard, index) => (

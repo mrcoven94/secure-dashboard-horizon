@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Maximize, Minimize, ChevronLeft } from 'lucide-react';
+import { RefreshCw, Maximize, Minimize, ChevronLeft, FileX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ interface DashboardEmbedProps {
 export function DashboardEmbed({ dashboardId, title, url, hideControls = false }: DashboardEmbedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const { checkAccess } = useAuth();
   
   // Check if user has access to this dashboard
@@ -35,6 +36,7 @@ export function DashboardEmbed({ dashboardId, title, url, hideControls = false }
   
   const handleRefresh = () => {
     setIsLoading(true);
+    setHasError(false);
     // Simulate refresh
     setTimeout(() => {
       setIsLoading(false);
@@ -45,11 +47,16 @@ export function DashboardEmbed({ dashboardId, title, url, hideControls = false }
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
+  const handleIframeError = () => {
+    setHasError(true);
+    setIsLoading(false);
+  };
   
   if (!hasAccess) {
     return (
       <Card className="bg-muted/30 backdrop-blur-sm border-muted">
-        <CardContent className="flex flex-col items-center justify-center h-[500px] p-6">
+        <CardContent className="flex flex-col items-center justify-center h-full p-6">
           <div className="text-4xl mb-4">🔒</div>
           <CardTitle className="text-xl mb-2">Access Restricted</CardTitle>
           <CardDescription className="text-center max-w-md mb-4">
@@ -129,12 +136,27 @@ export function DashboardEmbed({ dashboardId, title, url, hideControls = false }
               <Skeleton className="h-24 rounded-md" />
             </div>
           </div>
+        ) : hasError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4">
+            <div className="flex flex-col items-center justify-center text-muted-foreground max-w-md mx-auto text-center">
+              <FileX className="h-16 w-16 mb-4 sm:h-20 sm:w-20 md:h-24 md:w-24 text-muted-foreground/70" />
+              <h3 className="text-lg font-medium mb-2">Dashboard Unavailable</h3>
+              <p className="text-sm mb-6">
+                The dashboard could not be loaded. This might be due to network issues or the dashboard may be temporarily unavailable.
+              </p>
+              <Button variant="outline" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          </div>
         ) : (
           <iframe 
             src={url} 
             frameBorder="0" 
             allowFullScreen={true}
             className="w-full h-full"
+            onError={handleIframeError}
           />
         )}
       </motion.div>
