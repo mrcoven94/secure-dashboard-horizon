@@ -9,7 +9,6 @@ import { fetchGroups } from '@/services/groupService';
 import { Group } from '@/types/group';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
 
 // Sample dashboard URLs mapped to group IDs (would ideally come from a database)
 const DASHBOARD_URLS: Record<string, string> = {
@@ -22,7 +21,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [dashboards, setDashboards] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentDashboard, setCurrentDashboard] = useState<string | null>(null);
   
   // Fetch dashboards on component mount
   useEffect(() => {
@@ -75,106 +73,41 @@ export default function Dashboard() {
     
     loadDashboards();
   }, [user]);
-  
-  // Get dashboard icon based on id
-  const getDashboardIcon = (dashboardId: string) => {
-    if (dashboardId.includes('overview')) return BarChart3;
-    if (dashboardId.includes('demographic')) return Users;
-    if (dashboardId.includes('geography')) return Globe;
-    return BarChart3;
-  };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6">
-        <Card className="border-none shadow-none bg-transparent">
-          <CardHeader className="px-0 pt-0">
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-1"
-            >
-              <CardTitle className="text-3xl font-bold tracking-tight">
-                Analytics Dashboard
-              </CardTitle>
-              <CardDescription className="text-muted-foreground text-base">
-                Explore insights from the Horizons Survey data
-              </CardDescription>
-            </motion.div>
-          </CardHeader>
-        </Card>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="w-full grid grid-cols-1 gap-6"
+      <div className="h-screen overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="p-4 h-full"
         >
           {loading ? (
-            <Card className="p-8 flex justify-center items-center">
+            <div className="flex justify-center items-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </Card>
-          ) : currentDashboard ? (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-semibold">
-                  {dashboards.find(d => d.id === currentDashboard)?.name || 'Dashboard'}
-                </h2>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setCurrentDashboard(null)}
-                >
-                  Back to Dashboards
-                </Button>
-              </div>
-              
-              <Card className="border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-6">
-                  <DashboardEmbed 
-                    dashboardId={currentDashboard}
-                    title={dashboards.find(d => d.id === currentDashboard)?.name || 'Dashboard'} 
-                    url={DASHBOARD_URLS[currentDashboard] || DASHBOARD_URLS.overview}
-                  />
-                </CardContent>
-              </Card>
             </div>
           ) : (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-semibold">Available Dashboards</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {dashboards.length > 0 ? (
-                  dashboards.map((dashboard) => {
-                    const Icon = getDashboardIcon(dashboard.id);
-                    return (
-                      <Card 
-                        key={dashboard.id}
-                        className="cursor-pointer hover:shadow-md transition-all"
-                        onClick={() => setCurrentDashboard(dashboard.id)}
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-center">
-                            <div className="bg-primary/10 text-primary p-2 rounded-md">
-                              <Icon className="h-5 w-5" />
-                            </div>
-                          </div>
-                          <CardTitle className="text-xl mt-2">{dashboard.name}</CardTitle>
-                          <CardDescription className="line-clamp-2">
-                            {dashboard.description || 'No description available'}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Button className="w-full">View Dashboard</Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                ) : (
-                  <div className="col-span-full text-center p-8 border border-dashed rounded-lg">
-                    <p className="text-muted-foreground">No dashboards available</p>
-                  </div>
-                )}
-              </div>
+            <div className="flex flex-row gap-4 h-full overflow-x-auto pb-4">
+              {dashboards.map((dashboard) => (
+                <Card 
+                  key={dashboard.id}
+                  className="flex-shrink-0 w-full md:w-[calc(100vw-16rem)] h-full overflow-hidden border border-border/40 bg-card/30 backdrop-blur-sm"
+                >
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-xl">{dashboard.name}</CardTitle>
+                    <CardDescription className="line-clamp-1">
+                      {dashboard.description || 'No description available'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[calc(100%-5rem)] p-4">
+                    <DashboardEmbed 
+                      dashboardId={dashboard.id}
+                      title={dashboard.name} 
+                      url={DASHBOARD_URLS[dashboard.id] || DASHBOARD_URLS.overview}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </motion.div>
