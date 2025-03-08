@@ -149,11 +149,25 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
               
               <CardContent className="pb-2 flex-grow">
                 {dashboard.groups && dashboard.groups.length > 0 && (
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Users className="h-3 w-3 mr-1" />
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>
                       {dashboard.groups.length} {dashboard.groups.length === 1 ? 'group' : 'groups'} have access
                     </span>
+                  </div>
+                )}
+                {dashboard.groups && dashboard.groups.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {dashboard.groups.slice(0, 3).map((group, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {group}
+                      </Badge>
+                    ))}
+                    {dashboard.groups.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{dashboard.groups.length - 3} more
+                      </Badge>
+                    )}
                   </div>
                 )}
               </CardContent>
