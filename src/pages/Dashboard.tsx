@@ -4,13 +4,14 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardEmbed } from '@/components/dashboard/DashboardEmbed';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, FileX } from 'lucide-react';
+import { Loader2, FileX, Plus, Settings } from 'lucide-react';
 import { fetchGroups } from '@/services/groupService';
 import { Group } from '@/types/group';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 // Sample dashboard URLs mapped to group IDs (would ideally come from a database)
 const DASHBOARD_URLS: Record<string, string> = {
@@ -96,9 +97,18 @@ export default function Dashboard() {
         <p className="text-muted-foreground mb-6">
           There are no analytics dashboards available at this time. Please check back later or contact your administrator.
         </p>
-        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-          Refresh
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            Refresh
+          </Button>
+          {user?.role === 'admin' && (
+            <Button asChild>
+              <Link to="/dashboard/manage">
+                <Plus className="h-4 w-4 mr-2" /> Add Dashboard
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -112,23 +122,35 @@ export default function Dashboard() {
           transition={{ duration: 0.4 }}
           className="p-4 md:p-6 max-w-7xl mx-auto"
         >
-          <header className="mb-8">
-            <motion.h1 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.3 }}
-              className="text-2xl md:text-3xl font-bold text-foreground/90 mb-2"
-            >
-              Analytics Dashboards
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="text-muted-foreground"
-            >
-              Explore your key metrics and insights
-            </motion.p>
+          <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <motion.h1 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+                className="text-2xl md:text-3xl font-bold text-foreground/90 mb-2"
+              >
+                Analytics Dashboards
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="text-muted-foreground"
+              >
+                Explore your key metrics and insights
+              </motion.p>
+            </div>
+            
+            <div className="flex gap-2">
+              {user?.role === 'admin' && (
+                <Button variant="outline" asChild>
+                  <Link to="/dashboard/manage">
+                    <Settings className="h-4 w-4 mr-2" /> Manage Dashboards
+                  </Link>
+                </Button>
+              )}
+            </div>
           </header>
 
           {loading ? (

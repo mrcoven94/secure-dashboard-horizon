@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import DashboardManage from "./pages/DashboardManage";
 import Admin from "./pages/Admin";
 import Users from "./pages/Users";
 import Groups from "./pages/Groups";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/manage" element={<DashboardManage />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/users" element={<Users />} />
             <Route path="/groups" element={<Groups />} />
