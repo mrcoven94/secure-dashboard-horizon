@@ -84,7 +84,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="h-screen overflow-hidden">
+      <div className="h-screen overflow-auto">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -95,11 +95,11 @@ export default function Dashboard() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-4 h-full overflow-auto pb-4">
+            <div className="flex flex-col gap-6 pb-6">
               {dashboards.map((dashboard) => (
                 <Card 
                   key={dashboard.id}
-                  className="flex-shrink-0 w-full md:w-[calc(33.33%-1rem)] lg:w-[calc(50%-1rem)] xl:w-[calc(100vw-16rem)] h-[calc(100%-1rem)] overflow-hidden border border-border/40 bg-card/30 backdrop-blur-sm"
+                  className="w-full border border-border/40 bg-card/30 backdrop-blur-sm"
                 >
                   <CardHeader className="pb-0">
                     <div className="flex flex-col gap-2">
@@ -118,7 +118,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="h-[calc(100%-7rem)] p-4">
+                  <CardContent className="h-[500px] p-4">
                     <DashboardEmbed 
                       dashboardId={dashboard.id}
                       title={dashboard.name} 
