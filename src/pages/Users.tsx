@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { UserManagement, UserData } from '@/components/admin/UserManagement';
+import { UserManagement } from '@/components/admin/UserManagement';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +9,7 @@ import { updateUserAdminStatus } from '@/services/groupService';
 
 export default function Users() {
   const { user } = useAuth();
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function Users() {
       
       // For development, use mock data that includes the current user
       if (process.env.NODE_ENV === 'development') {
-        const mockUsers: UserData[] = [
+        const mockUsers = [
           { 
             id: '1', 
             email: 'admin@example.com', 
@@ -69,7 +69,7 @@ export default function Users() {
       }
 
       // Map profiles to the format needed for the component
-      const userData: UserData[] = profiles.map(profile => ({
+      const userData = profiles.map(profile => ({
         id: profile.id,
         email: profile.email,
         isAdmin: profile.is_admin === true, // Ensure this is a boolean
