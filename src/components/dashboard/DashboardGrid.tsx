@@ -106,7 +106,7 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
         initial="hidden"
         animate="show"
       >
-        {dashboards.map((dashboard) => (
+        {dashboards.map((dashboard, index) => (
           <motion.div key={dashboard.id} variants={itemAnimation}>
             <Card className={`overflow-hidden h-full flex flex-col transition-all duration-200 hover:shadow-md border ${dashboard.status === 'draft' ? 'border-yellow-200 bg-yellow-50/10' : 'border-border/40'}`}>
               <div className="relative overflow-hidden aspect-video bg-muted/50">
@@ -157,7 +157,7 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
               </div>
               
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-start gap-2">
+                <div className="flex flex-col gap-2">
                   <CardTitle className="text-xl truncate">{dashboard.name}</CardTitle>
                   <div className="flex flex-wrap gap-1">
                     {dashboard.status === 'draft' ? (
