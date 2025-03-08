@@ -173,16 +173,8 @@ export function DashboardGrid({ dashboards, onDelete, onUpdate }: DashboardGridP
               </CardContent>
               
               <CardFooter className="pt-0">
-                <div className="flex justify-between items-center w-full text-xs text-muted-foreground">
+                <div className="w-full text-xs text-muted-foreground">
                   <span>Created {formatDistanceToNow(new Date(dashboard.created_at), { addSuffix: true })}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8"
-                    onClick={() => navigate(`/dashboard/${dashboard.id}`)}
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" /> Open
-                  </Button>
                 </div>
               </CardFooter>
             </Card>
