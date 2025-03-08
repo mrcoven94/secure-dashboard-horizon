@@ -2,23 +2,23 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Maximize, Minimize, ChevronLeft, Share2, Download } from 'lucide-react';
+import { RefreshCw, Maximize, Minimize, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 
 interface DashboardEmbedProps {
   dashboardId: string;
   title: string;
   url: string;
+  hideControls?: boolean;
 }
 
-export function DashboardEmbed({ dashboardId, title, url }: DashboardEmbedProps) {
+export function DashboardEmbed({ dashboardId, title, url, hideControls = false }: DashboardEmbedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedView, setSelectedView] = useState('chart');
   const { checkAccess } = useAuth();
   
   // Check if user has access to this dashboard
@@ -45,14 +45,6 @@ export function DashboardEmbed({ dashboardId, title, url }: DashboardEmbedProps)
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
-  const handleShare = () => {
-    toast.success('Share link copied to clipboard');
-  };
-
-  const handleDownload = () => {
-    toast.success('Dashboard export started');
-  };
   
   if (!hasAccess) {
     return (
@@ -75,63 +67,46 @@ export function DashboardEmbed({ dashboardId, title, url }: DashboardEmbedProps)
         isFullscreen ? "fixed inset-0 z-50 p-4 bg-background/95 flex flex-col" : "relative"
       )}
     >
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4"
-      >
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full"
-            onClick={() => window.history.back()}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h3 className="text-lg font-medium">{title}</h3>
-            <p className="text-sm text-muted-foreground">Last updated: Today at 10:30 AM</p>
+      {!hideControls && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4"
+        >
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              onClick={() => window.history.back()}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h3 className="text-lg font-medium">{title}</h3>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShare}
-            className="h-8"
-          >
-            <Share2 size={14} className="mr-1" />
-            Share
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownload}
-            className="h-8"
-          >
-            <Download size={14} className="mr-1" />
-            Export
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="h-8 w-8 p-0"
-          >
-            <RefreshCw size={14} className={cn(isLoading && "animate-spin")} />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleFullscreen}
-            className="h-8 w-8 p-0"
-          >
-            {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
-          </Button>
-        </div>
-      </motion.div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw size={14} className={cn(isLoading && "animate-spin")} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleFullscreen}
+              className="h-8 w-8 p-0"
+            >
+              {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+            </Button>
+          </div>
+        </motion.div>
+      )}
       
       <motion.div 
         initial={{ opacity: 0, y: 10 }}

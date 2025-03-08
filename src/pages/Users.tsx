@@ -7,9 +7,16 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { updateUserAdminStatus } from '@/services/groupService';
 
+type User = {
+  id: string;
+  email: string;
+  isAdmin: boolean;
+  lastSignIn: string | null;
+};
+
 export default function Users() {
   const { user } = useAuth();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

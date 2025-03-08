@@ -4,17 +4,25 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardEmbed } from '@/components/dashboard/DashboardEmbed';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, BarChart3, Users, Globe } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { fetchGroups } from '@/services/groupService';
 import { Group } from '@/types/group';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
 
 // Sample dashboard URLs mapped to group IDs (would ideally come from a database)
 const DASHBOARD_URLS: Record<string, string> = {
   'overview': 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Overview?:language=en-US&:display_count=n&:origin=viz_share_link',
   'demographics': 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Customers?:language=en-US&:display_count=n&:origin=viz_share_link',
   'geography': 'https://public.tableau.com/views/SuperStoreSales_16798495258770/Geography?:language=en-US&:display_count=n&:origin=viz_share_link'
+};
+
+// Sample dashboard group associations (would come from a database)
+const DASHBOARD_GROUPS = {
+  'overview': ['Sales Team', 'Executive', 'All Users'],
+  'demographics': ['Marketing Team', 'Executive'],
+  'geography': ['Sales Team', 'Regional Managers']
 };
 
 export default function Dashboard() {
@@ -87,23 +95,35 @@ export default function Dashboard() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="flex flex-row gap-4 h-full overflow-x-auto pb-4">
+            <div className="flex flex-col md:flex-row gap-4 h-full overflow-auto pb-4">
               {dashboards.map((dashboard) => (
                 <Card 
                   key={dashboard.id}
-                  className="flex-shrink-0 w-full md:w-[calc(100vw-16rem)] h-full overflow-hidden border border-border/40 bg-card/30 backdrop-blur-sm"
+                  className="flex-shrink-0 w-full md:w-[calc(33.33%-1rem)] lg:w-[calc(50%-1rem)] xl:w-[calc(100vw-16rem)] h-[calc(100%-1rem)] overflow-hidden border border-border/40 bg-card/30 backdrop-blur-sm"
                 >
                   <CardHeader className="pb-0">
-                    <CardTitle className="text-xl">{dashboard.name}</CardTitle>
-                    <CardDescription className="line-clamp-1">
-                      {dashboard.description || 'No description available'}
-                    </CardDescription>
+                    <div className="flex flex-col gap-2">
+                      <CardTitle className="text-xl">{dashboard.name}</CardTitle>
+                      <CardDescription className="line-clamp-1">
+                        {dashboard.description || 'No description available'}
+                      </CardDescription>
+                      
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <span className="text-xs text-muted-foreground mr-1">Available to:</span>
+                        {DASHBOARD_GROUPS[dashboard.id as keyof typeof DASHBOARD_GROUPS]?.map((group) => (
+                          <Badge key={group} variant="outline" className="text-xs">
+                            {group}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="h-[calc(100%-5rem)] p-4">
+                  <CardContent className="h-[calc(100%-7rem)] p-4">
                     <DashboardEmbed 
                       dashboardId={dashboard.id}
                       title={dashboard.name} 
                       url={DASHBOARD_URLS[dashboard.id] || DASHBOARD_URLS.overview}
+                      hideControls={true}
                     />
                   </CardContent>
                 </Card>

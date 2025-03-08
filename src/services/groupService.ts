@@ -1,285 +1,194 @@
+
 import { supabase } from '@/lib/supabase';
 import { Group, GroupMember, ExistingUser } from '@/types/group';
 
-export async function fetchGroups() {
+// Fetch all groups
+export async function fetchGroups(): Promise<Group[]> {
   const { data, error } = await supabase
     .from('groups')
-    .select('*');
-
+    .select('*')
+    .order('created_at', { ascending: false });
+    
   if (error) throw error;
-  return data || [];
+  return data as Group[];
 }
 
-export async function fetchGroupMembers(groupId: string) {
-  const { data, error } = await supabase
+// Fetch group members
+export async function fetchGroupMembers(groupId: string): Promise<GroupMember[]> {
+  // First get the group members
+  const { data: members, error: membersError } = await supabase
     .from('group_members')
-    .select(`
-      id,
-      group_id,
-      user_id,
-      role,
-      profiles:user_id(email)
-    `)
+    .select('*, profiles(email)')
     .eq('group_id', groupId);
+    
+  if (membersError) throw membersError;
   
+  // Format the response
+  return members.map((member: any) => ({
+    id: member.id,
+    group_id: member.group_id,
+    user_id: member.user_id,
+    role: member.role,
+    email: member.profiles?.email || null
+  }));
+}
+
+// Fetch existing users for group member selection
+export async function fetchExistingUsers(): Promise<ExistingUser[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .order('email');
+    
   if (error) throw error;
-
-  // Format the data to get email from profiles
-  return data.map(member => {
-    // Extract email, handling different possible structures
-    let email = 'Unknown Email';
-    
-    if (member.profiles) {
-      if (Array.isArray(member.profiles)) {
-        // If it's an array, take the first item's email
-        email = member.profiles.length > 0 && member.profiles[0]?.email 
-          ? member.profiles[0].email 
-          : 'Unknown Email';
-      } else if (typeof member.profiles === 'object' && member.profiles !== null) {
-        // If it's an object with email property
-        email = member.profiles && 
-               typeof member.profiles === 'object' && 
-               member.profiles !== null && 
-               'email' in member.profiles && 
-               typeof member.profiles.email === 'string'
-          ? member.profiles.email 
-          : 'Unknown Email';
-      }
-    }
-
-    return {
-      id: member.id,
-      group_id: member.group_id,
-      user_id: member.user_id,
-      role: member.role,
-      email
-    };
-  });
+  
+  return data as ExistingUser[];
 }
 
-export async function fetchExistingUsers() {
-  try {
-    // Use the demo users from AuthContext for development environment
-    if (process.env.NODE_ENV === 'development') {
-      // Get the current user first to ensure they're in the list
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUserId = session?.user?.id;
-      const currentUserEmail = session?.user?.email;
-      
-      // Create a list of demo users including the current user
-      const demoUsers: ExistingUser[] = [
-        { id: '1', email: 'admin@example.com' },
-        { id: '2', email: 'user@example.com' },
-        { id: '3', email: 'mrcoven94@gmail.com' }
-      ];
-      
-      // Add the current user if they're not already in the list
-      if (currentUserId && currentUserEmail && !demoUsers.some(u => u.email === currentUserEmail)) {
-        demoUsers.push({ id: currentUserId, email: currentUserEmail });
-      }
-      
-      return demoUsers;
-    }
-    
-    // For non-development, fetch from the database
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .order('email');
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching existing users:', error);
-    // Return empty array as fallback to prevent UI from breaking
-    return [];
-  }
-}
-
+// Create a new group
 export async function createGroup(
   name: string, 
-  description: string | null, 
-  userId: string, 
-  selectedUsers: ExistingUser[], 
-  initialMembers: string[]
-) {
-  try {
-    // For development environment, mock the group creation
-    if (process.env.NODE_ENV === 'development') {
-      // Generate a mock ID
-      const newGroupId = Math.random().toString(36).substring(2, 15);
-      
-      const mockGroup: Group = {
-        id: newGroupId,
-        name: name.trim(),
-        description: description?.trim() || null,
-        created_by: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      console.log('Created mock group:', mockGroup);
-      console.log('Selected users to add:', selectedUsers);
-      console.log('Email invites to send:', initialMembers);
-      
-      return mockGroup;
-    }
+  description: string, 
+  created_by: string,
+  selectedUsers: ExistingUser[],
+  invitedEmails: string[]
+): Promise<Group> {
+  // First create the group
+  const { data: group, error: groupError } = await supabase
+    .from('groups')
+    .insert([
+      { name, description: description || null, created_by }
+    ])
+    .select()
+    .single();
     
-    // For production environment, use Supabase
-    const { data, error } = await supabase
-      .from('groups')
-      .insert({
-        name: name.trim(),
-        description: description?.trim() || null,
-        created_by: userId,
-      })
-      .select();
-
-    if (error) throw error;
-
-    const newGroup = data?.[0];
-    if (!newGroup) throw new Error('Failed to create group');
-
-    // Add selected existing users
-    if (selectedUsers.length > 0) {
-      const membersToAdd = selectedUsers.map(selectedUser => ({
-        group_id: newGroup.id,
-        user_id: selectedUser.id,
-        role: 'member',
-      }));
-
-      const { error: memberError } = await supabase
-        .from('group_members')
-        .insert(membersToAdd);
-
-      if (memberError) {
-        console.error('Failed to add existing users to group', memberError);
-        throw memberError;
-      }
-    }
-
-    // Process initial members (email invites)
-    if (initialMembers.length > 0) {
-      const addMembersPromises = initialMembers.map(async (email) => {
-        // Check if user already exists in the system
-        const { data: profiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', email.trim());
-
-        if (profileError) {
-          console.error(`Error checking if user exists: ${email}`, profileError);
-          return { email, success: false };
-        }
-
-        // If user exists, add them directly
-        if (profiles && profiles.length > 0) {
-          const { error: memberError } = await supabase
-            .from('group_members')
-            .insert({
-              group_id: newGroup.id,
-              user_id: profiles[0].id,
-              role: 'member',
-            });
-
-          if (memberError) {
-            console.error(`Failed to add ${email} to group`, memberError);
-            return { email, success: false };
-          }
-          return { email, success: true };
-        }
-
-        // For non-existing users, in a real app, you would implement an invitation system
-        // For this demo, we'll just count it as successful
-        return { email, success: true };
-      });
-
-      await Promise.all(addMembersPromises);
-    }
-
-    return newGroup;
-  } catch (error) {
-    console.error('Error creating group:', error);
-    throw error;
+  if (groupError) throw groupError;
+  
+  // If there are selected existing users, add them as members
+  if (selectedUsers.length > 0) {
+    const members = selectedUsers.map(user => ({
+      group_id: group.id,
+      user_id: user.id,
+      role: 'member'
+    }));
+    
+    const { error: membersError } = await supabase
+      .from('group_members')
+      .insert(members);
+      
+    if (membersError) throw membersError;
   }
+  
+  // Add the creator as an admin member
+  const { error: creatorError } = await supabase
+    .from('group_members')
+    .insert([
+      { group_id: group.id, user_id: created_by, role: 'admin' }
+    ]);
+    
+  if (creatorError) throw creatorError;
+  
+  // In a real app, we would send invitations to the invited emails
+  // For now, we'll just return the created group
+  return group as Group;
 }
 
-export async function updateGroup(groupId: string, name: string, description: string | null) {
+// Update a group
+export async function updateGroup(
+  groupId: string,
+  name: string,
+  description: string
+): Promise<void> {
   const { error } = await supabase
     .from('groups')
-    .update({
-      name: name.trim(),
-      description: description?.trim() || null,
+    .update({ 
+      name, 
+      description: description || null,
+      updated_at: new Date().toISOString()
     })
     .eq('id', groupId);
-
+    
   if (error) throw error;
 }
 
-export async function deleteGroup(groupId: string) {
+// Delete a group
+export async function deleteGroup(groupId: string): Promise<void> {
+  // First delete all group members
+  const { error: membersError } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId);
+    
+  if (membersError) throw membersError;
+  
+  // Then delete the group
   const { error } = await supabase
     .from('groups')
     .delete()
     .eq('id', groupId);
-
+    
   if (error) throw error;
 }
 
-export async function addMemberToGroup(groupId: string, email: string) {
-  // Find if user exists by email
-  const { data: profiles, error: profileError } = await supabase
+// Add a member to a group
+export async function addMemberToGroup(
+  groupId: string,
+  email: string
+): Promise<void> {
+  // Check if the user exists
+  const { data: users, error: userError } = await supabase
     .from('profiles')
     .select('id')
-    .eq('email', email.trim())
-    .single();
-
-  if (profileError) {
-    throw new Error('User not found with this email');
+    .eq('email', email)
+    .limit(1);
+    
+  if (userError) throw userError;
+  
+  if (users.length === 0) {
+    throw new Error(`User with email ${email} does not exist`);
   }
-
-  // Add user to group
+  
+  const userId = users[0].id;
+  
+  // Check if the user is already a member
+  const { data: existingMembers, error: existingError } = await supabase
+    .from('group_members')
+    .select('id')
+    .eq('group_id', groupId)
+    .eq('user_id', userId);
+    
+  if (existingError) throw existingError;
+  
+  if (existingMembers.length > 0) {
+    throw new Error(`User is already a member of this group`);
+  }
+  
+  // Add the user to the group
   const { error } = await supabase
     .from('group_members')
-    .insert({
-      group_id: groupId,
-      user_id: profiles.id,
-      role: 'member',
-    });
-
-  if (error) {
-    if (error.code === '23505') {
-      throw new Error('User is already a member of this group');
-    }
-    throw error;
-  }
+    .insert([
+      { group_id: groupId, user_id: userId, role: 'member' }
+    ]);
+    
+  if (error) throw error;
 }
 
-export async function removeMemberFromGroup(memberId: string) {
+// Remove a member from a group
+export async function removeMemberFromGroup(memberId: string): Promise<void> {
   const { error } = await supabase
     .from('group_members')
     .delete()
     .eq('id', memberId);
-
+    
   if (error) throw error;
 }
 
-export async function updateUserAdminStatus(userId: string, isAdmin: boolean) {
-  try {
-    // For development environment, just log the change
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Updating user ${userId} admin status to ${isAdmin}`);
-      return true;
-    }
+// Update user admin status
+export async function updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_admin: isAdmin })
+    .eq('id', userId);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_admin: isAdmin })
-      .eq('id', userId);
-
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Error updating user admin status:', error);
-    throw error;
-  }
+  if (error) throw error;
 }
