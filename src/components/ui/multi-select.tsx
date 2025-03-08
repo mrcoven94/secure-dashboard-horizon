@@ -45,11 +45,6 @@ export function MultiSelect({
     }
   };
 
-  const selectedLabels = selected.map((value) => {
-    const option = options.find((opt) => opt.value === value);
-    return option ? option.label : value;
-  });
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -74,31 +69,17 @@ export function MultiSelect({
                     variant="secondary"
                     key={item}
                     className="mr-1 mb-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUnselect(item);
-                    }}
                   >
                     {label}
-                    <button
-                      className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-ring"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleUnselect(item);
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
+                    <span
+                      className="ml-1 rounded-full inline-flex items-center justify-center cursor-pointer"
                       onClick={(e) => {
-                        e.preventDefault();
                         e.stopPropagation();
                         handleUnselect(item);
                       }}
                     >
                       <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
+                    </span>
                   </Badge>
                 );
               })

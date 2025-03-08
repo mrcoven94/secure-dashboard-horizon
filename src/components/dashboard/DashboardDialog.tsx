@@ -76,6 +76,7 @@ export function DashboardDialog({
 }: DashboardDialogProps) {
   const { groups, loading: loadingGroups } = useGroups();
   const [embedType, setEmbedType] = useState<'url' | 'code'>('url');
+  const [groupOptions, setGroupOptions] = useState<{ label: string; value: string }[]>([]);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -96,6 +97,17 @@ export function DashboardDialog({
     setEmbedType(value);
     form.setValue('embedType', value);
   };
+
+  // Process group data for the MultiSelect when groups are loaded
+  useEffect(() => {
+    if (groups && groups.length > 0) {
+      const options = groups.map((group: Group) => ({
+        label: group.name,
+        value: group.id,
+      }));
+      setGroupOptions(options);
+    }
+  }, [groups]);
 
   useEffect(() => {
     if (dashboard && mode === 'edit') {
@@ -321,10 +333,7 @@ export function DashboardDialog({
                   <FormLabel>Access Groups</FormLabel>
                   <FormControl>
                     <MultiSelect
-                      options={groups.map((group: Group) => ({
-                        label: group.name,
-                        value: group.id,
-                      }))}
+                      options={groupOptions}
                       selected={field.value || []}
                       onChange={field.onChange}
                       placeholder="Select groups..."
