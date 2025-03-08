@@ -37,7 +37,8 @@ export async function fetchGroupMembers(groupId: string) {
           : 'Unknown Email';
       } else if (typeof member.profiles === 'object' && member.profiles !== null) {
         // If it's an object with email property
-        email = typeof member.profiles === 'object' && 
+        email = member.profiles && 
+               typeof member.profiles === 'object' && 
                member.profiles !== null && 
                'email' in member.profiles && 
                typeof member.profiles.email === 'string'

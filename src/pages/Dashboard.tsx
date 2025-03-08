@@ -5,11 +5,11 @@ import { DashboardSelector } from '@/components/dashboard/DashboardSelector';
 import { DashboardEmbed } from '@/components/dashboard/DashboardEmbed';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, LineChart, PieChart, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { fetchGroups } from '@/services/groupService';
 import { Group } from '@/types/group';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 // Sample dashboard URLs mapped to group IDs (would ideally come from a database)
 const DASHBOARD_URLS: Record<string, string> = {
@@ -19,10 +19,10 @@ const DASHBOARD_URLS: Record<string, string> = {
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDashboard, setCurrentDashboard] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboards');
   
   // Fetch groups on component mount
   useEffect(() => {
@@ -30,6 +30,9 @@ export default function Dashboard() {
       try {
         setLoading(true);
         const fetchedGroups = await fetchGroups();
+        
+        // Filter groups based on user permissions (for a real app)
+        // For now, we'll show all groups in the demo
         setGroups(fetchedGroups);
         
         // Set the default dashboard to the first group if available
@@ -49,7 +52,6 @@ export default function Dashboard() {
   
   const handleSelectDashboard = (dashboardId: string) => {
     setCurrentDashboard(dashboardId);
-    setActiveTab('view');
   };
 
   // Find the currently selected group
@@ -98,60 +100,47 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="w-full"
+          className="w-full grid md:grid-cols-12 gap-6"
         >
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-              <TabsTrigger value="dashboards" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span>Dashboard Groups</span>
-              </TabsTrigger>
-              <TabsTrigger value="view" className="flex items-center gap-2">
-                <LineChart className="h-4 w-4" />
-                <span>Current View</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="dashboards" className="mt-0">
-              <Card className="border border-border/40 bg-card/30 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  {loading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <DashboardSelector 
-                      groups={groups}
-                      currentDashboard={currentDashboard}
-                      onSelect={handleSelectDashboard}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="view" className="mt-0">
-              <Card className="border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
-                <CardContent className="p-6">
-                  {currentGroup ? (
-                    <DashboardEmbed 
-                      dashboardId={currentDashboard}
-                      title={currentGroup.name}
-                      url={getDashboardUrl(currentGroup)}
-                    />
-                  ) : (
-                    <div className="py-8 text-center text-muted-foreground">
-                      {groups.length > 0 ? 'Select a dashboard to view' : 'No dashboard groups available'}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <div className="md:col-span-4 lg:col-span-3">
+            <Card className="border border-border/40 bg-card/30 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Available Dashboards</CardTitle>
+                <CardDescription>Select a dashboard to view</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <DashboardSelector 
+                    groups={groups}
+                    currentDashboard={currentDashboard}
+                    onSelect={handleSelectDashboard}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="md:col-span-8 lg:col-span-9">
+            <Card className="border border-border/40 bg-card/30 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-6">
+                {currentGroup ? (
+                  <DashboardEmbed 
+                    dashboardId={currentDashboard}
+                    title={currentGroup.name}
+                    url={getDashboardUrl(currentGroup)}
+                  />
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground">
+                    {groups.length > 0 ? 'Select a dashboard to view' : 'No dashboard groups available'}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </motion.div>
       </div>
     </DashboardLayout>

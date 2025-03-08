@@ -1,18 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { UserManagement } from '@/components/admin/UserManagement';
+import { UserManagement, UserData } from '@/components/admin/UserManagement';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { updateUserAdminStatus } from '@/services/groupService';
-
-interface UserData {
-  id: string;
-  email: string;
-  isAdmin: boolean;
-  lastSignIn: string | null;
-}
 
 export default function Users() {
   const { user } = useAuth();
