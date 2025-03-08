@@ -35,6 +35,7 @@ import { useGroups } from '@/hooks/useGroups';
 import { Group } from '@/types/group';
 import { Dashboard } from '@/types/dashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Dashboard name is required'),
@@ -74,7 +75,7 @@ export function DashboardDialog({
   dashboard,
   mode = 'create',
 }: DashboardDialogProps) {
-  const { groups, loading: loadingGroups } = useGroups();
+  const { groups, loading: loadingGroups, error: groupsError } = useGroups();
   const [embedType, setEmbedType] = useState<'url' | 'code'>('url');
   const [groupOptions, setGroupOptions] = useState<{ label: string; value: string }[]>([]);
   
@@ -106,8 +107,13 @@ export function DashboardDialog({
         value: group.id,
       }));
       setGroupOptions(options);
+    } else if (groupsError) {
+      console.error('Error loading groups:', groupsError);
+      // Fallback with empty options if there's an error
+      setGroupOptions([]);
+      toast.error('Could not load groups. Using default settings.');
     }
-  }, [groups]);
+  }, [groups, groupsError]);
 
   useEffect(() => {
     if (dashboard && mode === 'edit') {
@@ -140,7 +146,12 @@ export function DashboardDialog({
   }, [dashboard, mode, open, form]);
 
   const handleSubmit = (data: FormData) => {
-    onSubmit(data);
+    try {
+      onSubmit(data);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('Failed to save dashboard. Please try again.');
+    }
   };
 
   return (

@@ -9,6 +9,7 @@ export function useDashboards() {
   const { user } = useAuth();
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
 
   // Fetch dashboards on component mount
@@ -19,6 +20,7 @@ export function useDashboards() {
   const fetchDashboards = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // For development environment, use mock data
       if (process.env.NODE_ENV === 'development') {
@@ -95,6 +97,7 @@ export function useDashboards() {
       setDashboards(dashboardsData);
     } catch (error) {
       console.error('Error fetching dashboards:', error);
+      setError(error instanceof Error ? error : new Error('Unknown error occurred'));
       toast.error('Failed to load dashboards');
     } finally {
       setLoading(false);
@@ -118,7 +121,7 @@ export function useDashboards() {
         .from('dashboards')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
         
       if (error) throw error;
       
@@ -206,6 +209,8 @@ export function useDashboards() {
 
   const updateDashboard = async (id: string, data: Partial<Dashboard>) => {
     try {
+      console.log('Updating dashboard:', id, data);
+      
       // For development, use mock data
       if (process.env.NODE_ENV === 'development') {
         const updatedDashboards = dashboards.map(dashboard => {
@@ -221,21 +226,24 @@ export function useDashboards() {
         });
         
         setDashboards(updatedDashboards);
+        toast.success('Dashboard updated successfully');
         return updatedDashboards.find(d => d.id === id);
       }
       
       // For production, update in Supabase
+      const updateData: any = {};
+      
+      if (data.name) updateData.title = data.name;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.url) updateData.tableau_url = data.url;
+      if (data.embed_code !== undefined) updateData.embed_code = data.embed_code;
+      if (data.visibility) updateData.visibility = data.visibility;
+      if (data.status) updateData.status = data.status;
+      updateData.updated_at = new Date().toISOString();
+      
       const { data: updatedDashboard, error } = await supabase
         .from('dashboards')
-        .update({
-          title: data.name,
-          description: data.description || null,
-          tableau_url: data.url || null,
-          embed_code: data.embed_code || null,
-          visibility: data.visibility,
-          status: data.status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -269,6 +277,7 @@ export function useDashboards() {
       
       // Fetch the updated dashboards list
       fetchDashboards();
+      toast.success('Dashboard updated successfully');
       
       return updatedDashboard;
     } catch (error) {
@@ -280,10 +289,13 @@ export function useDashboards() {
 
   const deleteDashboard = async (id: string) => {
     try {
+      console.log('Deleting dashboard:', id);
+      
       // For development, use mock data
       if (process.env.NODE_ENV === 'development') {
         const filteredDashboards = dashboards.filter(dashboard => dashboard.id !== id);
         setDashboards(filteredDashboards);
+        toast.success('Dashboard deleted successfully');
         return true;
       }
       
@@ -293,7 +305,10 @@ export function useDashboards() {
         .delete()
         .eq('dashboard_id', id);
         
-      if (groupsError) throw groupsError;
+      if (groupsError) {
+        console.error('Error deleting dashboard groups:', groupsError);
+        // Continue even if there's an error with group deletion
+      }
       
       // Then delete the dashboard
       const { error } = await supabase
@@ -303,8 +318,9 @@ export function useDashboards() {
         
       if (error) throw error;
       
-      // Fetch the updated dashboards list
-      fetchDashboards();
+      // Update the local state
+      setDashboards(dashboards.filter(dashboard => dashboard.id !== id));
+      toast.success('Dashboard deleted successfully');
       
       return true;
     } catch (error) {
@@ -317,6 +333,7 @@ export function useDashboards() {
   return {
     dashboards,
     loading,
+    error,
     selectedDashboard,
     setSelectedDashboard,
     fetchDashboards,
