@@ -1,6 +1,4 @@
-
 import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,7 +57,9 @@ export function DashboardManagement() {
   const handleCreateDashboard = async (dashboard: {
     name: string;
     description?: string;
-    url: string;
+    embedType: 'url' | 'code';
+    url?: string;
+    embedCode?: string;
     visibility: string;
     groups: string[];
   }) => {
@@ -67,7 +67,8 @@ export function DashboardManagement() {
       await createDashboard({
         name: dashboard.name,
         description: dashboard.description || '',
-        url: dashboard.url,
+        url: dashboard.embedType === 'url' ? dashboard.url : undefined,
+        embed_code: dashboard.embedType === 'code' ? dashboard.embedCode : undefined,
         visibility: dashboard.visibility,
         groups: dashboard.groups,
       });

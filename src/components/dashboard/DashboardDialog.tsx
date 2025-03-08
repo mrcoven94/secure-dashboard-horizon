@@ -34,13 +34,26 @@ import { MultiSelect } from '@/components/ui/multi-select';
 import { useGroups } from '@/hooks/useGroups';
 import { Group } from '@/types/group';
 import { Dashboard } from '@/types/dashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Dashboard name is required'),
   description: z.string().optional(),
-  url: z.string().min(1, 'Dashboard URL is required'),
+  embedType: z.enum(['url', 'code']),
+  url: z.string().optional(),
+  embedCode: z.string().optional(),
   visibility: z.string().min(1, 'Visibility is required'),
   groups: z.array(z.string()).optional(),
+}).refine(data => {
+  // Ensure either URL or embed code is provided based on embedType
+  if (data.embedType === 'url') {
+    return !!data.url;
+  } else {
+    return !!data.embedCode;
+  }
+}, {
+  message: "Either URL or embed code is required based on your selection",
+  path: ['url', 'embedCode'],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -61,24 +74,38 @@ export function DashboardDialog({
   mode = 'create',
 }: DashboardDialogProps) {
   const { groups, loading: loadingGroups } = useGroups();
+  const [embedType, setEmbedType] = useState<'url' | 'code'>('url');
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
+      embedType: 'url',
       url: '',
+      embedCode: '',
       visibility: 'private',
       groups: [],
     },
   });
 
+  // Handle embed type change to conditionally show URL or embed code form field
+  const onEmbedTypeChange = (value: 'url' | 'code') => {
+    setEmbedType(value);
+    form.setValue('embedType', value);
+  };
+
   useEffect(() => {
     if (dashboard && mode === 'edit') {
+      const hasEmbedCode = !!dashboard.embed_code;
+      setEmbedType(hasEmbedCode ? 'code' : 'url');
+      
       form.reset({
         name: dashboard.name,
         description: dashboard.description || '',
-        url: dashboard.url || '',
+        embedType: hasEmbedCode ? 'code' : 'url',
+        url: dashboard.url || dashboard.tableau_url || '',
+        embedCode: dashboard.embed_code || '',
         visibility: dashboard.visibility || 'private',
         groups: dashboard.groups || [],
       });
@@ -86,10 +113,13 @@ export function DashboardDialog({
       form.reset({
         name: '',
         description: '',
+        embedType: 'url',
         url: '',
+        embedCode: '',
         visibility: 'private',
         groups: [],
       });
+      setEmbedType('url');
     }
   }, [dashboard, mode, open, form]);
 
@@ -153,23 +183,71 @@ export function DashboardDialog({
 
             <FormField
               control={form.control}
-              name="url"
+              name="embedType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Dashboard URL</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://public.tableau.com/views/YourDashboard" 
-                      {...field} 
-                    />
-                  </FormControl>
+                  <FormLabel>Embed Method</FormLabel>
+                  <Tabs 
+                    value={field.value} 
+                    onValueChange={(value) => onEmbedTypeChange(value as 'url' | 'code')}
+                    className="w-full"
+                  >
+                    <TabsList className="grid grid-cols-2 w-full">
+                      <TabsTrigger value="url">Dashboard URL</TabsTrigger>
+                      <TabsTrigger value="code">Embed Code</TabsTrigger>
+                    </TabsList>
+                    <FormMessage />
+                  </Tabs>
                   <FormDescription>
-                    The URL to your embedded dashboard (Tableau, Looker, etc.)
+                    Choose how to embed your dashboard
                   </FormDescription>
-                  <FormMessage />
                 </FormItem>
               )}
             />
+
+            {embedType === 'url' ? (
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dashboard URL</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://public.tableau.com/views/YourDashboard" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The URL to your embedded dashboard (Tableau, Looker, etc.)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="embedCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Embed Code</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="<div class='tableauPlaceholder'..."
+                        className="min-h-[150px] font-mono text-xs"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Paste the HTML embed code from your dashboard provider
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

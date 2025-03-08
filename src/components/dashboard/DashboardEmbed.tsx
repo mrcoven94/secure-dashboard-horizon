@@ -12,11 +12,18 @@ import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/c
 interface DashboardEmbedProps {
   dashboardId: string;
   title: string;
-  url: string;
+  url?: string;
+  embedCode?: string;
   hideControls?: boolean;
 }
 
-export function DashboardEmbed({ dashboardId, title, url, hideControls = false }: DashboardEmbedProps) {
+export function DashboardEmbed({ 
+  dashboardId, 
+  title, 
+  url, 
+  embedCode, 
+  hideControls = false 
+}: DashboardEmbedProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -150,6 +157,11 @@ export function DashboardEmbed({ dashboardId, title, url, hideControls = false }
               </Button>
             </div>
           </div>
+        ) : embedCode ? (
+          <div 
+            className="w-full h-full"
+            dangerouslySetInnerHTML={{ __html: embedCode }}
+          />
         ) : (
           <iframe 
             src={url} 
