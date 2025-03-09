@@ -6,6 +6,7 @@ export type Group = {
   created_at: string;
   created_by: string;
   updated_at?: string;
+  member_count?: number;
 };
 
 export type GroupMember = {

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { Group } from '@/types/group';
+import { Group, ExistingUser } from '@/types/group';
 import { supabase } from '@/lib/supabase';
 
 export function useGroups() {
@@ -230,3 +230,5 @@ export function useGroups() {
     deleteGroup,
   };
 }
+
+export { type ExistingUser };

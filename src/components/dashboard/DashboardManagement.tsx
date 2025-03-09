@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,16 +62,20 @@ export function DashboardManagement() {
     url?: string;
     embedCode?: string;
     visibility: string;
+    status: 'draft' | 'published';
     groups: string[];
   }) => {
     try {
+      console.log('Creating dashboard with:', dashboard);
+      
       await createDashboard({
         name: dashboard.name,
         description: dashboard.description || '',
         url: dashboard.embedType === 'url' ? dashboard.url : undefined,
         embed_code: dashboard.embedType === 'code' ? dashboard.embedCode : undefined,
         visibility: dashboard.visibility,
-        groups: dashboard.groups,
+        status: dashboard.status,
+        groups: dashboard.groups || [],
       });
       
       setCreateDialogOpen(false);
