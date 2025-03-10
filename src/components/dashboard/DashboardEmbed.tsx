@@ -80,7 +80,7 @@ export function DashboardEmbed({
 
   // Create error message based on error type
   const errorMessage = hasError ? 
-    (errorType === 'INVALID_URL' ? 
+    (errorType === TableauLoadError.INVALID_URL ? 
       'The dashboard URL is invalid or improperly formatted. Please verify the URL and try again.' : 
       'Failed to load the dashboard. Please try refreshing or contact your administrator.') 
     : undefined;

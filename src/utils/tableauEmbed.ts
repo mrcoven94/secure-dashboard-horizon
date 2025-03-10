@@ -12,6 +12,7 @@ export enum TableauLoadError {
   SCRIPT_EXECUTION_FAILED = 'script_execution_failed',
   ELEMENT_NOT_FOUND = 'element_not_found',
   NETWORK_ERROR = 'network_error',
+  INVALID_URL = 'invalid_url',
 }
 
 export const initializeTableauEmbed = ({
@@ -112,6 +113,8 @@ export const getErrorMessageForTableauError = (errorType: TableauLoadError): str
       return 'Dashboard elements could not be found. Please contact support.';
     case TableauLoadError.NETWORK_ERROR:
       return 'Network error loading the dashboard. Check your internet connection and try again.';
+    case TableauLoadError.INVALID_URL:
+      return 'The dashboard URL is invalid or improperly formatted. Please verify the URL and try again.';
     default:
       return 'An unknown error occurred with the dashboard. Please try refreshing the page.';
   }
