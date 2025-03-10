@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshCw, Maximize, Minimize, ChevronLeft, FileX } from 'lucide-react';
@@ -30,6 +30,7 @@ export function DashboardEmbed({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasError, setHasError] = useState(false);
   const { checkAccess } = useAuth();
+  const embedContainerRef = useRef<HTMLDivElement>(null);
   
   // Check if user has access to this dashboard
   const hasAccess = checkAccess(dashboardId);
@@ -42,6 +43,43 @@ export function DashboardEmbed({
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle embed code initialization
+  useEffect(() => {
+    if (!isLoading && embedCode && embedContainerRef.current) {
+      try {
+        // Clear previous content
+        embedContainerRef.current.innerHTML = '';
+        
+        // Insert the embed code HTML
+        embedContainerRef.current.innerHTML = embedCode;
+        
+        // Find and execute all scripts in the embed code
+        const scripts = embedContainerRef.current.getElementsByTagName('script');
+        
+        Array.from(scripts).forEach(oldScript => {
+          const newScript = document.createElement('script');
+          
+          // Copy all attributes from the old script to the new script
+          Array.from(oldScript.attributes).forEach(attr => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+          
+          // Copy the content of the script
+          newScript.innerHTML = oldScript.innerHTML;
+          
+          // Replace the old script with the new one to execute it
+          oldScript.parentNode?.replaceChild(newScript, oldScript);
+        });
+        
+        console.log('Tableau embed initialized');
+      } catch (error) {
+        console.error('Error initializing embed code:', error);
+        setHasError(true);
+        toast.error('Failed to load dashboard visualization');
+      }
+    }
+  }, [isLoading, embedCode]);
   
   const handleRefresh = () => {
     setIsLoading(true);
@@ -176,8 +214,8 @@ export function DashboardEmbed({
           </div>
         ) : embedCode ? (
           <div 
-            className="w-full h-full"
-            dangerouslySetInnerHTML={{ __html: embedCode }}
+            ref={embedContainerRef}
+            className="w-full h-full p-2 overflow-auto"
           />
         ) : (
           <iframe 
