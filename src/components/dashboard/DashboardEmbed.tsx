@@ -78,6 +78,13 @@ export function DashboardEmbed({
     return <AccessRestricted status="draft" />;
   }
 
+  // Create error message based on error type
+  const errorMessage = hasError ? 
+    (errorType === 'INVALID_URL' ? 
+      'The dashboard URL is invalid or improperly formatted. Please verify the URL and try again.' : 
+      'Failed to load the dashboard. Please try refreshing or contact your administrator.') 
+    : undefined;
+
   return (
     <div
       className={cn(
@@ -117,7 +124,18 @@ export function DashboardEmbed({
             onError={handleError} 
           />
         ) : (
-          <NoContent />
+          <NoContent 
+            onRefresh={handleRefresh} 
+            isLoading={isLoading} 
+            errorMessage={errorMessage}
+          />
+        )}
+
+        {hasError && (url || embedCode) && (
+          <NoContent 
+            onRefresh={handleRefresh}
+            errorMessage={errorMessage}
+          />
         )}
       </motion.div>
     </div>
