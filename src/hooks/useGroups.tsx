@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -12,17 +11,14 @@ export function useGroups() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  // Group selection state
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   
-  // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   
-  // Form states
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [initialMembers, setInitialMembers] = useState<string[]>([]);
@@ -30,18 +26,15 @@ export function useGroups() {
   const [editGroupDesc, setEditGroupDesc] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   
-  // User selection for group creation
   const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<ExistingUser[]>([]);
 
-  // Fetch groups on component mount
   useEffect(() => {
     fetchGroups();
     fetchAvailableUsers();
   }, [user]);
 
-  // Fetch group members when a group is selected
   useEffect(() => {
     if (selectedGroup) {
       fetchMembers(selectedGroup.id);
@@ -53,9 +46,7 @@ export function useGroups() {
       setLoading(true);
       setError(null);
       
-      // For development environment, use mock data
       if (process.env.NODE_ENV === 'development') {
-        // Sample data structure
         const mockGroups: Group[] = [
           {
             id: '1',
@@ -91,7 +82,6 @@ export function useGroups() {
         return;
       }
       
-      // For production, fetch from Supabase
       const { data, error } = await supabase
         .from('groups')
         .select('*');
@@ -102,7 +92,6 @@ export function useGroups() {
     } catch (error) {
       console.error('Error fetching groups:', error);
       setError(error instanceof Error ? error : new Error('Unknown error occurred'));
-      // Use mock data as fallback even in production if there's an error
       const mockGroups: Group[] = [
         {
           id: '1',
@@ -142,7 +131,6 @@ export function useGroups() {
     try {
       setLoadingUsers(true);
       
-      // For development environment, use mock data
       if (process.env.NODE_ENV === 'development') {
         const mockUsers: ExistingUser[] = [
           { id: '1', email: 'user1@example.com' },
@@ -156,14 +144,12 @@ export function useGroups() {
         return;
       }
       
-      // For production, fetch from service
       const users = await fetchExistingUsers();
       setExistingUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
       
-      // Fallback mock data
       const mockUsers: ExistingUser[] = [
         { id: '1', email: 'user1@example.com' },
         { id: '2', email: 'user2@example.com' },
@@ -181,7 +167,6 @@ export function useGroups() {
     try {
       setLoadingMembers(true);
       
-      // For development environment, use mock data
       if (process.env.NODE_ENV === 'development') {
         const mockMembers: GroupMember[] = [
           { id: '1', group_id: groupId, user_id: '1', role: 'admin', email: 'admin@example.com' },
@@ -194,14 +179,12 @@ export function useGroups() {
         return;
       }
       
-      // For production, fetch from service
       const members = await fetchGroupMembers(groupId);
       setGroupMembers(members);
     } catch (error) {
       console.error('Error fetching group members:', error);
       toast.error('Failed to load group members');
       
-      // Fallback mock data
       const mockMembers: GroupMember[] = [
         { id: '1', group_id: groupId, user_id: '1', role: 'admin', email: 'admin@example.com' },
         { id: '2', group_id: groupId, user_id: '2', role: 'member', email: 'member1@example.com' },
@@ -216,7 +199,6 @@ export function useGroups() {
 
   const createGroup = async (name: string, description: string) => {
     try {
-      // For development, add to mock data
       if (process.env.NODE_ENV === 'development') {
         const newGroup: Group = {
           id: String(groups.length + 1),
@@ -232,7 +214,6 @@ export function useGroups() {
         return newGroup;
       }
       
-      // For production, insert in Supabase
       const { data, error } = await supabase
         .from('groups')
         .insert({
@@ -256,7 +237,6 @@ export function useGroups() {
 
   const updateGroup = async (id: string, name: string, description: string) => {
     try {
-      // For development, update mock data
       if (process.env.NODE_ENV === 'development') {
         const updatedGroups = groups.map(group => {
           if (group.id === id) {
@@ -274,7 +254,6 @@ export function useGroups() {
         return updatedGroups.find(g => g.id === id);
       }
       
-      // For production, update in Supabase
       const { data, error } = await supabase
         .from('groups')
         .update({
@@ -304,14 +283,12 @@ export function useGroups() {
 
   const deleteGroup = async (id: string) => {
     try {
-      // For development, remove from mock data
       if (process.env.NODE_ENV === 'development') {
         const filteredGroups = groups.filter(group => group.id !== id);
         setGroups(filteredGroups);
         return true;
       }
       
-      // For production, delete from Supabase
       const { error } = await supabase
         .from('groups')
         .delete()
@@ -327,12 +304,11 @@ export function useGroups() {
       throw error;
     }
   };
-  
-  // Handler functions
+
   const handleOpenGroup = (group: Group) => {
     setSelectedGroup(group);
   };
-  
+
   const handleCreateGroup = async () => {
     try {
       await createGroup(newGroupName, newGroupDesc);
@@ -345,14 +321,14 @@ export function useGroups() {
       console.error('Error in handleCreateGroup:', error);
     }
   };
-  
+
   const handleOpenEditDialog = (group: Group) => {
     setEditGroupName(group.name);
     setEditGroupDesc(group.description || '');
     setSelectedGroup(group);
     setEditDialogOpen(true);
   };
-  
+
   const handleEditGroup = async () => {
     try {
       if (!selectedGroup) return;
@@ -364,7 +340,7 @@ export function useGroups() {
       console.error('Error in handleEditGroup:', error);
     }
   };
-  
+
   const handleDeleteGroup = async (id: string) => {
     try {
       await deleteGroup(id);
@@ -373,13 +349,12 @@ export function useGroups() {
       console.error('Error in handleDeleteGroup:', error);
     }
   };
-  
+
   const handleAddMember = async () => {
     try {
       if (!selectedGroup) return;
       
       if (process.env.NODE_ENV === 'development') {
-        // Mock adding a member in development
         const newMember: GroupMember = {
           id: String(groupMembers.length + 1),
           group_id: selectedGroup.id,
@@ -389,7 +364,6 @@ export function useGroups() {
         };
         
         setGroupMembers([...groupMembers, newMember]);
-        // Update the member count
         const updatedGroups = groups.map(group => {
           if (group.id === selectedGroup.id) {
             return {
@@ -407,10 +381,8 @@ export function useGroups() {
         return;
       }
       
-      // For production
       await addMemberToGroup(selectedGroup.id, inviteEmail);
       await fetchMembers(selectedGroup.id);
-      // Refresh groups to update member count
       await fetchGroups();
       
       setInviteDialogOpen(false);
@@ -421,17 +393,15 @@ export function useGroups() {
       toast.error('Failed to add member to group');
     }
   };
-  
+
   const handleRemoveMember = async (memberId: string) => {
     try {
       if (!selectedGroup) return;
       
       if (process.env.NODE_ENV === 'development') {
-        // Mock removing a member in development
         const updatedMembers = groupMembers.filter(member => member.id !== memberId);
         setGroupMembers(updatedMembers);
         
-        // Update the member count
         const updatedGroups = groups.map(group => {
           if (group.id === selectedGroup.id) {
             return {
@@ -447,10 +417,8 @@ export function useGroups() {
         return;
       }
       
-      // For production
       await removeMemberFromGroup(memberId);
       await fetchMembers(selectedGroup.id);
-      // Refresh groups to update member count
       await fetchGroups();
       
       toast.success('Member removed from group');
@@ -459,11 +427,15 @@ export function useGroups() {
       toast.error('Failed to remove member from group');
     }
   };
-  
-  const handleSelectUser = (user: ExistingUser) => {
-    setSelectedUsers(prev => [...prev, user]);
+
+  const handleSelectUser = (userId: string) => {
+    const selectedUser = existingUsers.find(user => user.id === userId);
+    
+    if (selectedUser) {
+      setSelectedUsers(prev => [...prev, selectedUser]);
+    }
   };
-  
+
   const handleRemoveSelectedUser = (userId: string) => {
     setSelectedUsers(prev => prev.filter(user => user.id !== userId));
   };
@@ -477,13 +449,11 @@ export function useGroups() {
     updateGroup,
     deleteGroup,
     
-    // Group selection
     selectedGroup,
     setSelectedGroup,
     groupMembers,
     loadingMembers,
     
-    // Dialog states
     createDialogOpen,
     setCreateDialogOpen,
     editDialogOpen,
@@ -491,7 +461,6 @@ export function useGroups() {
     inviteDialogOpen,
     setInviteDialogOpen,
     
-    // Form states
     newGroupName,
     setNewGroupName,
     newGroupDesc,
@@ -505,7 +474,6 @@ export function useGroups() {
     inviteEmail,
     setInviteEmail,
     
-    // Handler functions
     handleCreateGroup,
     handleOpenEditDialog,
     handleEditGroup,
@@ -514,7 +482,6 @@ export function useGroups() {
     handleAddMember,
     handleRemoveMember,
     
-    // User selection for group creation
     existingUsers,
     loadingUsers,
     selectedUsers,
@@ -523,5 +490,4 @@ export function useGroups() {
   };
 }
 
-// Make sure to export the ExistingUser type so it's accessible to components
 export type { ExistingUser };

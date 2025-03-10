@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, X, Search, User, UserPlus } from 'lucide-react';
-import { ExistingUser } from '@/hooks/useGroups';
+import { ExistingUser } from '@/types/group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CreateGroupDialogProps {
@@ -18,7 +17,6 @@ interface CreateGroupDialogProps {
   initialMembers: string[];
   setInitialMembers: (members: string[]) => void;
   onCreateGroup: () => void;
-  // New props for user selection
   existingUsers: ExistingUser[];
   loadingUsers: boolean;
   selectedUsers: ExistingUser[];
@@ -90,7 +88,6 @@ export const CreateGroupDialog = ({
             />
           </div>
           
-          {/* Add existing users section */}
           <div className="space-y-2">
             <Label>Add Existing Users</Label>
             <div className="relative">
@@ -136,7 +133,6 @@ export const CreateGroupDialog = ({
               </Select>
             </div>
 
-            {/* Show selected users */}
             {selectedUsers.length > 0 && (
               <div className="mt-2">
                 <Label>Selected users:</Label>
@@ -162,7 +158,6 @@ export const CreateGroupDialog = ({
             )}
           </div>
 
-          {/* Add by email section */}
           <div className="space-y-2">
             <Label>Invite by Email</Label>
             <div className="space-y-1">
