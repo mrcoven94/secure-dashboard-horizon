@@ -51,11 +51,18 @@ export function DashboardEmbed({
         // Clear previous content
         embedContainerRef.current.innerHTML = '';
         
+        // Create a wrapper div with proper dimensions
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.style.width = '100%';
+        wrapperDiv.style.height = '100%';
+        wrapperDiv.style.overflow = 'auto';
+        
         // Insert the embed code HTML
-        embedContainerRef.current.innerHTML = embedCode;
+        wrapperDiv.innerHTML = embedCode;
+        embedContainerRef.current.appendChild(wrapperDiv);
         
         // Find and execute all scripts in the embed code
-        const scripts = embedContainerRef.current.getElementsByTagName('script');
+        const scripts = wrapperDiv.getElementsByTagName('script');
         
         Array.from(scripts).forEach(oldScript => {
           const newScript = document.createElement('script');
@@ -71,6 +78,21 @@ export function DashboardEmbed({
           // Replace the old script with the new one to execute it
           oldScript.parentNode?.replaceChild(newScript, oldScript);
         });
+        
+        // Fix any tableau viz elements that need responsive sizing
+        setTimeout(() => {
+          const tableauVizElements = wrapperDiv.getElementsByClassName('tableauViz');
+          if (tableauVizElements.length > 0) {
+            Array.from(tableauVizElements).forEach((vizElement: any) => {
+              // Make tableau visualizations responsive
+              if (vizElement.style) {
+                vizElement.style.width = '100%';
+                vizElement.style.minHeight = '500px';
+                vizElement.style.height = '100%';
+              }
+            });
+          }
+        }, 1000);
         
         console.log('Tableau embed initialized');
       } catch (error) {
@@ -215,9 +237,9 @@ export function DashboardEmbed({
         ) : embedCode ? (
           <div 
             ref={embedContainerRef}
-            className="w-full h-full p-2 overflow-auto"
+            className="w-full h-full overflow-hidden"
           />
-        ) : (
+        ) : url ? (
           <iframe 
             src={url} 
             frameBorder="0" 
@@ -225,6 +247,16 @@ export function DashboardEmbed({
             className="w-full h-full"
             onError={handleIframeError}
           />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4">
+            <div className="flex flex-col items-center justify-center text-muted-foreground max-w-md mx-auto text-center">
+              <FileX className="h-16 w-16 mb-4 sm:h-20 sm:w-20 md:h-24 md:w-24 text-muted-foreground/70" />
+              <h3 className="text-lg font-medium mb-2">No Dashboard Content</h3>
+              <p className="text-sm mb-6">
+                This dashboard doesn't have any content configured. Please add either an embed code or a URL.
+              </p>
+            </div>
+          </div>
         )}
       </motion.div>
     </div>
