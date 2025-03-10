@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Menu, X, LayoutDashboard, LineChart } from 'lucide-react';
+import { LogOut, User, Menu, X, LineChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -48,34 +48,6 @@ export function Header() {
             <span className="font-medium text-xl text-primary ml-1">Analytics</span>
           </div>
         </Link>
-        
-        <nav className="hidden md:flex items-center gap-8">
-          <Link 
-            to="/" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary relative py-1",
-              location.pathname === '/' 
-                ? 'text-primary after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/40 after:rounded-full' 
-                : 'text-muted-foreground'
-            )}
-          >
-            Home
-          </Link>
-          
-          {isAuthenticated && (
-            <Link 
-              to="/dashboard" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary relative py-1",
-                location.pathname.startsWith('/dashboard') 
-                  ? 'text-primary after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary/40 after:rounded-full' 
-                  : 'text-muted-foreground'
-              )}
-            >
-              Dashboards
-            </Link>
-          )}
-        </nav>
         
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
@@ -132,34 +104,8 @@ export function Header() {
             className="md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 shadow-lg"
           >
             <div className="container mx-auto px-4 py-4 flex flex-col gap-3">
-              <Link 
-                to="/" 
-                className={cn(
-                  "px-4 py-3 rounded-md transition-colors flex items-center gap-3",
-                  location.pathname === '/' 
-                    ? 'bg-primary/10 text-primary font-medium' 
-                    : 'hover:bg-muted'
-                )}
-              >
-                <LayoutDashboard size={18} />
-                <span>Home</span>
-              </Link>
-              
               {isAuthenticated ? (
                 <>
-                  <Link 
-                    to="/dashboard" 
-                    className={cn(
-                      "px-4 py-3 rounded-md transition-colors flex items-center gap-3",
-                      location.pathname.startsWith('/dashboard') 
-                        ? 'bg-primary/10 text-primary font-medium' 
-                        : 'hover:bg-muted'
-                    )}
-                  >
-                    <LayoutDashboard size={18} />
-                    <span>Dashboards</span>
-                  </Link>
-                  
                   <div className="border-t border-gray-100 dark:border-gray-800 my-2 pt-2">
                     <div className="px-4 py-3 flex items-center gap-3 bg-muted/30 rounded-md">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
