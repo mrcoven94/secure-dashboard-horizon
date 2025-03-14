@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 interface TableauEmbedOptions {
@@ -42,6 +41,17 @@ export const initializeTableauEmbed = ({
       console.warn('No scripts found in Tableau embed code');
     }
     
+    // Catch URL errors from Tableau scripts
+    const originalCreateURL = window.URL.createObjectURL;
+    const errorHandler = (event: ErrorEvent) => {
+      console.error('Error in Tableau script execution:', event.error);
+      if (event.error instanceof TypeError && event.error.message.includes('URL')) {
+        onError?.(new Error(TableauLoadError.INVALID_URL));
+      }
+    };
+    
+    window.addEventListener('error', errorHandler);
+    
     Array.from(scripts).forEach(oldScript => {
       try {
         const newScript = document.createElement('script');
@@ -64,6 +74,11 @@ export const initializeTableauEmbed = ({
     
     // Fix any tableau viz elements that need responsive sizing
     applyTableauResponsiveStyles(wrapperDiv);
+    
+    // Clean up error handler after execution
+    setTimeout(() => {
+      window.removeEventListener('error', errorHandler);
+    }, 5000);
     
     console.log('Tableau embed initialized successfully');
   } catch (error) {

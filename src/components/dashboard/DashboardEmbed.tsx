@@ -37,6 +37,19 @@ export function DashboardEmbed({
   // Check if user has access to this dashboard
   const hasAccess = checkAccess(dashboardId);
   
+  // Validate URL early
+  useEffect(() => {
+    if (url) {
+      try {
+        new URL(url);
+      } catch (error) {
+        console.error('Invalid dashboard URL:', url);
+        setHasError(true);
+        setErrorType(TableauLoadError.INVALID_URL);
+      }
+    }
+  }, [url]);
+  
   useEffect(() => {
     // Simulate loading time
     const timer = setTimeout(() => {
@@ -111,13 +124,13 @@ export function DashboardEmbed({
           isFullscreen ? "flex-1" : "h-[70vh]"
         )}
       >
-        {embedCode ? (
+        {embedCode && !hasError ? (
           <TableauEmbedRenderer 
             embedCode={embedCode} 
             isLoading={isLoading} 
             onError={handleError} 
           />
-        ) : url ? (
+        ) : url && !hasError ? (
           <IframeEmbed 
             url={url} 
             isLoading={isLoading} 
